@@ -63,7 +63,7 @@ Dokumen ini berisi task list untuk implementasi sistem authentication menggunaka
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6_
 
 - [ ] 4. Create database seeders
-  - [-] 4.1 Buat AdminSeeder untuk akun admin default
+  - [x] 4.1 Buat AdminSeeder untuk akun admin default
     - Email: admin@mall.com
     - Password: password123 (hashed)
     - Role: admin
@@ -77,7 +77,7 @@ Dokumen ini berisi task list untuk implementasi sistem authentication menggunaka
     - _Requirements: 3.7_
 
 - [ ] 5. Implement Models dengan relationships
-  - [~] 5.1 Buat User model
+  - [x] 5.1 Buat User model
     - Fillable: name, email, password, role
     - Hidden: password, remember_token
     - Casts: email_verified_at (datetime), password (hashed)
@@ -86,7 +86,7 @@ Dokumen ini berisi task list untuk implementasi sistem authentication menggunaka
     - Accessors: isAdmin(), isRequester()
     - _Requirements: 4.11, 5.10, 7.10_
   
-  - [~] 5.2 Buat AuditLog model
+  - [x] 5.2 Buat AuditLog model
     - Fillable: user_id, user_email, action, ip_address, user_agent, metadata
     - Casts: metadata (array)
     - Relationship: belongsTo(User)
@@ -94,20 +94,20 @@ Dokumen ini berisi task list untuk implementasi sistem authentication menggunaka
     - _Requirements: 10.5, 10.6_
 
 - [ ] 6. Create Form Request classes untuk validasi
-  - [~] 6.1 Buat LoginRequest
+  - [x] 6.1 Buat LoginRequest
     - Rules: email (required|email), password (required|string), remember (boolean)
     - _Requirements: 5.2_
   
-  - [~] 6.2 Buat RegisterRequest
+  - [x] 6.2 Buat RegisterRequest
     - Rules: name (required|string|max:255), email (required|email|unique:users), password (required|string|min:8|confirmed)
     - Custom message dalam Bahasa Indonesia
     - _Requirements: 4.2, 4.3, 4.4, 4.5_
   
-  - [~] 6.3 Buat ForgotPasswordRequest
+  - [x] 6.3 Buat ForgotPasswordRequest
     - Rules: email (required|email|exists:users,email)
     - _Requirements: 8.2_
   
-  - [~] 6.4 Buat ResetPasswordRequest
+  - [x] 6.4 Buat ResetPasswordRequest
     - Rules: token (required|string), email (required|email|exists:users), password (required|string|min:8|confirmed)
     - _Requirements: 8.8, 8.9_
 
