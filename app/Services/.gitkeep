@@ -1,0 +1,9 @@
+# Services
+
+Folder ini berisi Service classes untuk business logic yang kompleks seperti:
+- AuthService.php
+- PasswordResetService.php
+- AuditLogService.php
+- dll.
+
+Services ini akan dibuat sesuai kebutuhan di task selanjutnya.

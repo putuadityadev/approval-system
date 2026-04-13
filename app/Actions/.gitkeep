@@ -1,0 +1,8 @@
+# Actions
+
+Folder ini berisi Action classes untuk single-responsibility actions seperti:
+- CreateUserAction.php
+- UpdateUserAction.php
+- dll.
+
+Actions ini akan dibuat sesuai kebutuhan di task selanjutnya.

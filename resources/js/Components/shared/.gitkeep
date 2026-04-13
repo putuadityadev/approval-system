@@ -1,0 +1,9 @@
+# Shared Components
+
+Folder ini berisi komponen yang digunakan di banyak halaman seperti:
+- ValidationErrors.jsx
+- FlashMessage.jsx
+- UserMenu.jsx
+- dll.
+
+Komponen-komponen ini akan dibuat sesuai kebutuhan di task selanjutnya.

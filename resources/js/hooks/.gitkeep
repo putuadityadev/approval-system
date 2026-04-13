@@ -1,0 +1,8 @@
+# Custom Hooks
+
+Folder ini berisi custom React hooks untuk logika yang reusable seperti:
+- useAuth.js
+- useFlashMessage.js
+- dll.
+
+Hooks ini akan dibuat sesuai kebutuhan di task selanjutnya.

@@ -1,0 +1,7 @@
+# Policies
+
+Folder ini berisi Policy classes untuk authorization logic seperti:
+- UserPolicy.php
+- dll.
+
+Policies ini akan dibuat sesuai kebutuhan di task selanjutnya.

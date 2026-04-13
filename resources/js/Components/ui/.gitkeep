@@ -1,0 +1,11 @@
+# UI Components
+
+Folder ini berisi komponen UI primitif yang reusable seperti:
+- Button.jsx
+- Input.jsx
+- Label.jsx
+- Alert.jsx
+- Modal.jsx
+- dll.
+
+Komponen-komponen ini akan dibuat sesuai kebutuhan di task selanjutnya.

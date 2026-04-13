@@ -1,0 +1,7 @@
+# Layouts
+
+Folder ini berisi layout wrapper untuk halaman-halaman seperti:
+- GuestLayout.jsx (untuk halaman login, register, dll)
+- AuthenticatedLayout.jsx (untuk halaman setelah login)
+
+Layout-layout ini akan dibuat sesuai kebutuhan di task selanjutnya.

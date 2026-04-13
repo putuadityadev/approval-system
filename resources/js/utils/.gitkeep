@@ -1,0 +1,8 @@
+# Utility Functions
+
+Folder ini berisi helper/utility functions seperti:
+- api.js (helper untuk Inertia router)
+- validation.js (client-side validation helpers)
+- dll.
+
+Utilities ini akan dibuat sesuai kebutuhan di task selanjutnya.

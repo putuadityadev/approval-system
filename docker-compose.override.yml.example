@@ -1,0 +1,28 @@
+# Docker Compose Override Example
+# Copy file ini ke docker-compose.override.yml untuk customize konfigurasi local
+# File docker-compose.override.yml akan otomatis di-load oleh docker-compose
+# dan tidak akan di-commit ke git (sudah ada di .gitignore)
+
+version: '3.8'
+
+services:
+  # Contoh: Override port untuk Laravel app
+  # app:
+  #   ports:
+  #     - "8001:8000"
+
+  # Contoh: Override port untuk MySQL
+  # db:
+  #   ports:
+  #     - "3307:3306"
+
+  # Contoh: Override port untuk Vite
+  # node:
+  #   ports:
+  #     - "5174:5173"
+
+  # Contoh: Tambah environment variables
+  # app:
+  #   environment:
+  #     - APP_DEBUG=true
+  #     - LOG_LEVEL=debug

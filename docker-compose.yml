@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # Laravel Application Container
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laravel_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    ports:
+      - "8000:8000"
+    networks:
+      - laravel_network
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=${DB_DATABASE:-mall_approval}
+      - DB_USERNAME=${DB_USERNAME:-mall_user}
+      - DB_PASSWORD=${DB_PASSWORD:-secret123}
+    command: sh -c "composer install --no-interaction --ignore-platform-reqs && php artisan serve --host=0.0.0.0 --port=8000"
+
+  # MySQL Database Container
+  db:
+    image: mysql:8.0
+    container_name: laravel_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-mall_approval}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-secret123}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret123}
+      MYSQL_USER: ${DB_USERNAME:-mall_user}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - laravel_network
+
+  # Node.js Container untuk Vite
+  node:
+    image: node:20-alpine
+    container_name: laravel_node
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    ports:
+      - "5173:5173"
+    networks:
+      - laravel_network
+    command: sh -c "npm install && npm run dev -- --host"
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  laravel_network:
+    driver: bridge
