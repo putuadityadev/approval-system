@@ -29,16 +29,16 @@ class DatabaseSeeder extends Seeder
      * Menjalankan semua seeder untuk setup data awal aplikasi.
      *
      * Cara kerjanya:
-     * 1. Panggil AdminSeeder untuk membuat akun admin default
+     * 1. Panggil SuperAdminSeeder untuk membuat akun super admin default
      * 2. Seeder lain bisa ditambahkan di sini sesuai kebutuhan
      *
      * @return void
      */
     public function run(): void
     {
-        // Buat akun admin default
+        // Buat akun super admin default
         $this->call([
-            AdminSeeder::class,
+            SuperAdminSeeder::class,
         ]);
     }
 }

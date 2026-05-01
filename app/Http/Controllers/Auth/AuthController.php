@@ -69,7 +69,7 @@ class AuthController extends Controller
      * Cara kerjanya:
      * 1. Terima dan validasi input dari LoginRequest (email, password, remember)
      * 2. Panggil AuthService->attempt() untuk verifikasi kredensial
-     * 3. Jika berhasil: log aktivitas login, redirect ke dashboard sesuai role
+     * 3. Jika berhasil: log aktivitas login, redirect ke dashboard sesuai role (7 roles)
      * 4. Jika gagal: log failed login, return error ke frontend
      *
      * @param LoginRequest $request — request yang sudah divalidasi
@@ -100,12 +100,9 @@ class AuthController extends Controller
         // Log aktivitas login ke audit trail
         $this->auditLogService->logLogin(auth()->user(), $request);
 
-        // Redirect ke dashboard sesuai role user
-        if (auth()->user()->isAdmin()) {
-            return redirect()->intended(route('admin.dashboard'));
-        }
-
-        return redirect()->intended(route('requester.dashboard'));
+        // Redirect ke dashboard sesuai role user (7 roles)
+        $dashboardRoute = auth()->user()->getDashboardRoute();
+        return redirect()->intended(route($dashboardRoute));
     }
 
     /**
@@ -129,29 +126,29 @@ class AuthController extends Controller
      * register
      *
      * Apa yang dilakukan fungsi ini:
-     * Memproses registrasi user baru dengan role 'requester'.
+     * Memproses registrasi user baru dengan role 'vendor' beserta data perusahaan.
      *
      * Cara kerjanya:
-     * 1. Terima dan validasi input dari RegisterRequest (name, email, password, password_confirmation)
-     * 2. Panggil AuthService->register() untuk buat user baru
+     * 1. Terima dan validasi input dari RegisterRequest (email, password, company_name, pic_name, pic_phone, address)
+     * 2. Panggil AuthService->register() untuk buat user vendor + data perusahaan
      * 3. AuthService akan otomatis login user yang baru dibuat
      * 4. Log aktivitas registrasi ke audit trail
-     * 5. Redirect ke requester dashboard dengan flash message sukses
+     * 5. Redirect ke vendor dashboard dengan flash message sukses
      *
      * @param RegisterRequest $request — request yang sudah divalidasi
-     * @return RedirectResponse — redirect ke requester dashboard
+     * @return RedirectResponse — redirect ke vendor dashboard
      */
     public function register(RegisterRequest $request): RedirectResponse
     {
-        // Buat user baru menggunakan AuthService
-        // AuthService akan otomatis set role 'requester' dan login user
+        // Buat user vendor baru beserta data perusahaan menggunakan AuthService
+        // AuthService akan otomatis set role 'vendor' dan login user
         $user = $this->authService->register($request->validated());
 
         // Log aktivitas registrasi ke audit trail
         $this->auditLogService->logRegister($user);
 
-        // Redirect ke requester dashboard dengan pesan sukses
-        return redirect()->route('requester.dashboard')->with('success', 'Akun berhasil dibuat. Selamat datang!');
+        // Redirect ke vendor dashboard dengan pesan sukses
+        return redirect()->route('vendor.dashboard')->with('success', 'Akun berhasil dibuat. Selamat datang!');
     }
 
     /**

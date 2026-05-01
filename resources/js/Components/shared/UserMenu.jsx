@@ -64,26 +64,30 @@ function UserMenu({ user, className = '' }) {
     /**
      * getUserInitial
      *
-     * Mengambil initial dari nama user (huruf pertama).
+     * Mengambil initial dari email user (huruf pertama sebelum @).
      * Digunakan untuk avatar placeholder.
      */
     const getUserInitial = () => {
-        if (!user || !user.name) return '?';
-        return user.name.charAt(0).toUpperCase();
+        if (!user || !user.email) return '?';
+        return user.email.charAt(0).toUpperCase();
     };
 
     /**
      * getRoleLabel
      *
      * Mengubah role menjadi label yang lebih readable.
-     * admin -> Admin, requester -> Requester
      */
     const getRoleLabel = () => {
         if (!user || !user.role) return '';
 
         const roleLabels = {
-            admin: 'Admin',
-            requester: 'Requester',
+            super_admin: 'Super Admin',
+            vendor: 'Vendor',
+            approver_dept: 'Approver Dept',
+            approver_ops: 'Approver Ops',
+            approver_finance: 'Approver Finance',
+            approver_gm: 'Approver GM',
+            security: 'Security',
         };
 
         return roleLabels[user.role] || user.role;
@@ -146,7 +150,7 @@ function UserMenu({ user, className = '' }) {
                 {/* User info */}
                 <div className="flex-1 text-left hidden md:block">
                     <p className="text-sm font-medium text-gray-900">
-                        {user.name}
+                        {user.email}
                     </p>
                     <p className="text-xs text-gray-500">{getRoleLabel()}</p>
                 </div>
@@ -185,7 +189,7 @@ function UserMenu({ user, className = '' }) {
                     {/* User info section (mobile only) */}
                     <div className="px-4 py-3 md:hidden">
                         <p className="text-sm font-medium text-gray-900">
-                            {user.name}
+                            {user.email}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
                             {getRoleLabel()}

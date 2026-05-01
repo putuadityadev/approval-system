@@ -15,10 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\HandleInertiaRequests::class,
         ]);
 
-        // Daftarkan middleware alias untuk role-based access control dan email verification
+        // Daftarkan middleware alias untuk role-based access control, email verification, dan active status check
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+            'active' => \App\Http\Middleware\EnsureActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

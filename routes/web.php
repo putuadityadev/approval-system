@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
@@ -15,17 +16,20 @@ use Inertia\Inertia;
  * - Menerapkan rate limiting untuk keamanan (login dan password reset)
  *
  * Struktur routing:
- * 1. Root route — redirect berdasarkan status authentication
+ * 1. Root route — redirect berdasarkan status authentication dan role
  * 2. Guest routes — untuk user yang belum login (login, register, forgot password, reset password)
  * 3. Authenticated routes — untuk user yang sudah login (logout, email verification)
- * 4. Admin routes — hanya untuk user dengan role 'admin'
- * 5. Requester routes — hanya untuk user dengan role 'requester'
+ * 4. Super Admin routes — hanya untuk user dengan role 'super_admin'
+ * 5. Vendor routes — hanya untuk user dengan role 'vendor'
+ * 6. Approver routes — untuk user dengan role approver (dept, ops, finance, gm)
+ * 7. Security routes — hanya untuk user dengan role 'security'
  *
  * Security:
  * - Rate limiting untuk login: 5 attempts per menit
  * - Rate limiting untuk password reset: 3 requests per jam
  * - CSRF protection aktif untuk semua POST/PUT/DELETE requests
  * - Role-based middleware untuk membatasi akses berdasarkan role
+ * - Active status check untuk semua authenticated routes
  */
 
 /*
@@ -41,11 +45,9 @@ use Inertia\Inertia;
 Route::get('/', function () {
     // Check apakah user sudah login
     if (auth()->check()) {
-        // Redirect ke dashboard sesuai role
-        if (auth()->user()->isAdmin()) {
-            return redirect()->route('admin.dashboard');
-        }
-        return redirect()->route('requester.dashboard');
+        // Redirect ke dashboard sesuai role menggunakan helper method
+        $dashboardRoute = auth()->user()->getDashboardRoute();
+        return redirect()->route($dashboardRoute);
     }
 
     // Jika belum login, redirect ke halaman login
@@ -75,7 +77,7 @@ Route::middleware('guest')->group(function () {
         ->middleware('throttle:5,1') // Rate limit: 5 attempts per 1 menit
         ->name('login.post');
 
-    // Register Routes
+    // Register Routes (untuk Vendor)
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register'])->name('register.post');
 
@@ -100,12 +102,13 @@ Route::middleware('guest')->group(function () {
 |
 | Routes ini hanya bisa diakses oleh user yang sudah login.
 | Jika user belum login, akan di-redirect ke halaman login.
+| Jika user tidak aktif (is_active = false), akan di-logout otomatis.
 |
-| Middleware: auth
+| Middleware: auth, active
 |
 */
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'active'])->group(function () {
     
     // Logout Route
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -126,64 +129,140 @@ Route::middleware('auth')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Admin Routes
+| Super Admin Routes
 |--------------------------------------------------------------------------
 |
-| Routes ini hanya bisa diakses oleh user dengan role 'admin'.
-| Jika user bukan admin, akan mendapat error 403 Forbidden.
+| Routes ini hanya bisa diakses oleh user dengan role 'super_admin'.
+| Jika user bukan super admin, akan mendapat error 403 Forbidden.
 |
-| Middleware: auth, role:admin
+| Middleware: auth, active, role:super_admin
 | Prefix: /admin
 |
 */
 
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'active', 'role:super_admin'])->prefix('admin')->name('admin.')->group(function () {
     
-    // Admin Dashboard
+    // Super Admin Dashboard
     Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard/AdminDashboard', [
+        return Inertia::render('Admin/Dashboard', [
             'auth' => [
                 'user' => auth()->user(),
             ],
         ]);
     })->name('dashboard');
 
-    // TODO: Tambahkan routes untuk fitur admin lainnya di sini
-    // Contoh:
-    // - User management (CRUD users)
-    // - Approval workflow management
-    // - Reports dan analytics
-    // - System settings
+    // User Management Routes (CRUD)
+    Route::resource('users', UserController::class)->except(['show']);
+    
+    // Activate User Route (custom action)
+    Route::post('/users/{user}/activate', [UserController::class, 'activate'])->name('users.activate');
 });
 
 /*
 |--------------------------------------------------------------------------
-| Requester Routes
+| Vendor Routes
 |--------------------------------------------------------------------------
 |
-| Routes ini hanya bisa diakses oleh user dengan role 'requester'.
-| Jika user bukan requester, akan mendapat error 403 Forbidden.
+| Routes ini hanya bisa diakses oleh user dengan role 'vendor'.
+| Jika user bukan vendor, akan mendapat error 403 Forbidden.
 |
-| Middleware: auth, role:requester
-| Prefix: /requester
+| Middleware: auth, active, role:vendor
+| Prefix: /vendor
 |
 */
 
-Route::middleware(['auth', 'role:requester'])->prefix('requester')->name('requester.')->group(function () {
+Route::middleware(['auth', 'active', 'role:vendor'])->prefix('vendor')->name('vendor.')->group(function () {
     
-    // Requester Dashboard
+    // Vendor Dashboard
     Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard/RequesterDashboard', [
+        return Inertia::render('Vendor/Dashboard', [
             'auth' => [
-                'user' => auth()->user(),
+                'user' => auth()->user()->load('vendor'),
             ],
         ]);
     })->name('dashboard');
 
-    // TODO: Tambahkan routes untuk fitur requester lainnya di sini
+    // TODO: Tambahkan routes untuk fitur vendor lainnya di sini
     // Contoh:
     // - Submit surat ijin (Loading In, Loading Out, Ijin Kerja)
     // - View status surat yang diajukan
     // - Upload dokumen pendukung
     // - View history surat
+});
+
+/*
+|--------------------------------------------------------------------------
+| Approver Routes
+|--------------------------------------------------------------------------
+|
+| Routes ini bisa diakses oleh user dengan role approver (dept, ops, finance, gm).
+| Jika user bukan approver, akan mendapat error 403 Forbidden.
+|
+| Middleware: auth, active, role:approver_dept,approver_ops,approver_finance,approver_gm
+| Prefix: /approver
+|
+*/
+
+Route::middleware(['auth', 'active', 'role:approver_dept,approver_ops,approver_finance,approver_gm'])->prefix('approver')->name('approver.')->group(function () {
+    
+    // Approver Dashboard
+    Route::get('/dashboard', function () {
+        $user = auth()->user();
+        
+        // Mapping role ke label yang lebih friendly
+        $roleLabels = [
+            'approver_dept' => 'Department',
+            'approver_ops' => 'Operations',
+            'approver_finance' => 'Finance',
+            'approver_gm' => 'GM',
+        ];
+        
+        $roleLabel = $roleLabels[$user->role] ?? $user->role;
+        
+        return Inertia::render('Approver/Dashboard', [
+            'auth' => [
+                'user' => $user,
+            ],
+            'roleLabel' => $roleLabel,
+        ]);
+    })->name('dashboard');
+
+    // TODO: Tambahkan routes untuk fitur approver lainnya di sini
+    // Contoh:
+    // - View surat yang perlu di-approve
+    // - Approve/reject surat
+    // - View history approval
+    // - Add notes/comments
+});
+
+/*
+|--------------------------------------------------------------------------
+| Security Routes
+|--------------------------------------------------------------------------
+|
+| Routes ini hanya bisa diakses oleh user dengan role 'security'.
+| Jika user bukan security, akan mendapat error 403 Forbidden.
+|
+| Middleware: auth, active, role:security
+| Prefix: /security
+|
+*/
+
+Route::middleware(['auth', 'active', 'role:security'])->prefix('security')->name('security.')->group(function () {
+    
+    // Security Dashboard
+    Route::get('/dashboard', function () {
+        return Inertia::render('Security/Dashboard', [
+            'auth' => [
+                'user' => auth()->user(),
+            ],
+        ]);
+    })->name('dashboard');
+
+    // TODO: Tambahkan routes untuk fitur security lainnya di sini
+    // Contoh:
+    // - Scan QR code surat
+    // - View surat yang sudah di-scan
+    // - Record status masuk/keluar vendor
+    // - View history scan
 });

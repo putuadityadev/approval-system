@@ -1,25 +1,23 @@
 /**
  * Register
  *
- * Halaman registrasi untuk Requester (vendor).
+ * Halaman registrasi untuk Vendor.
  *
  * Komponen ini digunakan untuk:
- * - Menampilkan form registrasi dengan field name, email, password, dan password confirmation
+ * - Menampilkan form registrasi vendor dengan data perusahaan
  * - Menangani proses registrasi menggunakan Inertia useForm
  * - Menampilkan validation errors
- * - Auto-login dan redirect ke requester dashboard setelah registrasi berhasil
+ * - Auto-login dan redirect ke vendor dashboard setelah registrasi berhasil
  *
  * Cara kerjanya:
- * 1. User mengisi nama, email, password, dan konfirmasi password
+ * 1. User mengisi email, password, dan data perusahaan (company_name, pic_name, pic_phone, address)
  * 2. Submit form ke endpoint POST /register
- * 3. Backend membuat user baru dengan role 'requester'
- * 4. Jika berhasil, user otomatis login dan redirect ke dashboard
+ * 3. Backend membuat user baru dengan role 'vendor' + data perusahaan di table vendors
+ * 4. Jika berhasil, user otomatis login dan redirect ke vendor dashboard
  * 5. Jika gagal, tampilkan error message
  *
  * Props:
  * - errors: object — validation errors dari backend
- *
- * Requirements: 4.1, 11.2, 11.8, 11.9
  */
 
 import { useForm, Link } from '@inertiajs/react';
@@ -34,10 +32,13 @@ function Register({ errors }) {
      * Mengelola state form dan proses submission
      */
     const { data, setData, post, processing } = useForm({
-        name: '',
         email: '',
         password: '',
         password_confirmation: '',
+        company_name: '',
+        pic_name: '',
+        pic_phone: '',
+        address: '',
     });
 
     /**
@@ -56,10 +57,10 @@ function Register({ errors }) {
             {/* Page title */}
             <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
-                    Buat Akun Baru
+                    Registrasi Vendor
                 </h2>
                 <p className="mt-2 text-sm text-gray-600">
-                    Daftar sebagai Requester untuk mengajukan surat ijin
+                    Daftar sebagai Vendor untuk mengajukan surat ijin masuk/keluar dan ijin kerja
                 </p>
             </div>
 
@@ -68,62 +69,122 @@ function Register({ errors }) {
 
             {/* Register form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Name field */}
-                <Input
-                    type="text"
-                    name="name"
-                    label="Nama Lengkap"
-                    value={data.name}
-                    onChange={(e) => setData('name', e.target.value)}
-                    placeholder="Masukkan nama lengkap Anda"
-                    required
-                    error={errors.name}
-                />
+                {/* Section: Data Akun */}
+                <div className="border-b border-gray-200 pb-4">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Data Akun</h3>
+                    
+                    {/* Email field */}
+                    <Input
+                        type="email"
+                        name="email"
+                        label="Email"
+                        value={data.email}
+                        onChange={(e) => setData('email', e.target.value)}
+                        placeholder="nama@perusahaan.com"
+                        required
+                        error={errors.email}
+                        className="mb-3"
+                    />
 
-                {/* Email field */}
-                <Input
-                    type="email"
-                    name="email"
-                    label="Email"
-                    value={data.email}
-                    onChange={(e) => setData('email', e.target.value)}
-                    placeholder="nama@contoh.com"
-                    required
-                    error={errors.email}
-                />
+                    {/* Password field */}
+                    <Input
+                        type="password"
+                        name="password"
+                        label="Password"
+                        value={data.password}
+                        onChange={(e) => setData('password', e.target.value)}
+                        placeholder="Minimal 8 karakter"
+                        required
+                        error={errors.password}
+                        className="mb-3"
+                    />
 
-                {/* Password field */}
-                <Input
-                    type="password"
-                    name="password"
-                    label="Password"
-                    value={data.password}
-                    onChange={(e) => setData('password', e.target.value)}
-                    placeholder="Minimal 8 karakter"
-                    required
-                    error={errors.password}
-                />
+                    {/* Password confirmation field */}
+                    <Input
+                        type="password"
+                        name="password_confirmation"
+                        label="Konfirmasi Password"
+                        value={data.password_confirmation}
+                        onChange={(e) =>
+                            setData('password_confirmation', e.target.value)
+                        }
+                        placeholder="Masukkan password yang sama"
+                        required
+                        error={errors.password_confirmation}
+                    />
+                </div>
 
-                {/* Password confirmation field */}
-                <Input
-                    type="password"
-                    name="password_confirmation"
-                    label="Konfirmasi Password"
-                    value={data.password_confirmation}
-                    onChange={(e) =>
-                        setData('password_confirmation', e.target.value)
-                    }
-                    placeholder="Masukkan password yang sama"
-                    required
-                    error={errors.password_confirmation}
-                />
+                {/* Section: Data Perusahaan */}
+                <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Data Perusahaan</h3>
+                    
+                    {/* Company name field */}
+                    <Input
+                        type="text"
+                        name="company_name"
+                        label="Nama Perusahaan"
+                        value={data.company_name}
+                        onChange={(e) => setData('company_name', e.target.value)}
+                        placeholder="PT. Contoh Perusahaan"
+                        required
+                        error={errors.company_name}
+                        className="mb-3"
+                    />
+
+                    {/* PIC name field */}
+                    <Input
+                        type="text"
+                        name="pic_name"
+                        label="Nama PIC (Person In Charge)"
+                        value={data.pic_name}
+                        onChange={(e) => setData('pic_name', e.target.value)}
+                        placeholder="Nama lengkap PIC"
+                        required
+                        error={errors.pic_name}
+                        className="mb-3"
+                    />
+
+                    {/* PIC phone field */}
+                    <Input
+                        type="text"
+                        name="pic_phone"
+                        label="Nomor Telepon PIC"
+                        value={data.pic_phone}
+                        onChange={(e) => setData('pic_phone', e.target.value)}
+                        placeholder="08123456789"
+                        required
+                        error={errors.pic_phone}
+                        className="mb-3"
+                    />
+
+                    {/* Address field */}
+                    <div className="mb-3">
+                        <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+                            Alamat Perusahaan <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                            id="address"
+                            name="address"
+                            value={data.address}
+                            onChange={(e) => setData('address', e.target.value)}
+                            placeholder="Alamat lengkap perusahaan"
+                            required
+                            rows="3"
+                            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                errors.address ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                        />
+                        {errors.address && (
+                            <p className="mt-1 text-sm text-red-600">{errors.address}</p>
+                        )}
+                    </div>
+                </div>
 
                 {/* Info text */}
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
                     <p className="text-xs text-blue-800">
-                        <strong>Catatan:</strong> Akun yang dibuat akan
-                        memiliki role Requester. Jika Anda memerlukan akses
-                        Admin, silakan hubungi administrator sistem.
+                        <strong>Catatan:</strong> Akun yang dibuat akan memiliki role Vendor. 
+                        Data perusahaan yang Anda masukkan akan digunakan untuk proses pengajuan surat.
                     </p>
                 </div>
 
