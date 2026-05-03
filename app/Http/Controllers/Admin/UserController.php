@@ -58,14 +58,29 @@ class UserController extends Controller
      */
     public function index(): Response
     {
-        // Ambil semua user dengan pagination dan eager load vendor
-        $users = User::with('vendor')
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+        try {
+            // Ambil semua user dengan pagination dan eager load vendor
+            $users = User::with('vendor')
+                ->orderBy('created_at', 'desc')
+                ->paginate(15);
 
-        return Inertia::render('Admin/Users/Index', [
-            'users' => $users,
-        ]);
+            return Inertia::render('Admin/Users/Index', [
+                'users' => $users,
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('USER_CONTROLLER_INDEX_EXCEPTION', [
+                'admin_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            // Return halaman dengan error message
+            return Inertia::render('Admin/Users/Index', [
+                'users' => [],
+                'error' => 'Terjadi kesalahan saat mengambil data user.',
+            ]);
+        }
     }
 
     /**
@@ -113,14 +128,28 @@ class UserController extends Controller
      */
     public function store(CreateUserRequest $request): RedirectResponse
     {
-        // Buat user baru menggunakan AuthService
-        $user = $this->authService->createUser($request->validated());
+        try {
+            // Buat user baru menggunakan AuthService
+            $user = $this->authService->createUser($request->validated());
 
-        // Log aktivitas create user ke audit trail
-        $this->auditLogService->logCreateUser(auth()->user(), $user);
+            // Log aktivitas create user ke audit trail
+            $this->auditLogService->logCreateUser(auth()->user(), $user);
 
-        // Redirect ke list users dengan pesan sukses
-        return redirect()->route('admin.users.index')->with('success', 'User berhasil dibuat.');
+            // Redirect ke list users dengan pesan sukses
+            return redirect()->route('admin.users.index')->with('success', 'User berhasil dibuat.');
+
+        } catch (\Exception $e) {
+            \Log::error('USER_CONTROLLER_STORE_EXCEPTION', [
+                'admin_id' => auth()->id(),
+                'email' => $request->input('email'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->withErrors([
+                'email' => 'Terjadi kesalahan saat membuat user. Silakan coba lagi.',
+            ])->withInput();
+        }
     }
 
     /**
@@ -174,14 +203,28 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
-        // Update user menggunakan AuthService
-        $this->authService->updateUser($user, $request->validated());
+        try {
+            // Update user menggunakan AuthService
+            $this->authService->updateUser($user, $request->validated());
 
-        // Log aktivitas update user ke audit trail
-        $this->auditLogService->logUpdateUser(auth()->user(), $user);
+            // Log aktivitas update user ke audit trail
+            $this->auditLogService->logUpdateUser(auth()->user(), $user);
 
-        // Redirect ke list users dengan pesan sukses
-        return redirect()->route('admin.users.index')->with('success', 'User berhasil diupdate.');
+            // Redirect ke list users dengan pesan sukses
+            return redirect()->route('admin.users.index')->with('success', 'User berhasil diupdate.');
+
+        } catch (\Exception $e) {
+            \Log::error('USER_CONTROLLER_UPDATE_EXCEPTION', [
+                'admin_id' => auth()->id(),
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->withErrors([
+                'email' => 'Terjadi kesalahan saat mengupdate user. Silakan coba lagi.',
+            ])->withInput();
+        }
     }
 
     /**
@@ -200,14 +243,26 @@ class UserController extends Controller
      */
     public function destroy(User $user): RedirectResponse
     {
-        // Deactivate user menggunakan AuthService
-        $this->authService->deactivateUser($user);
+        try {
+            // Deactivate user menggunakan AuthService
+            $this->authService->deactivateUser($user);
 
-        // Log aktivitas deactivate user ke audit trail
-        $this->auditLogService->logDeactivateUser(auth()->user(), $user);
+            // Log aktivitas deactivate user ke audit trail
+            $this->auditLogService->logDeactivateUser(auth()->user(), $user);
 
-        // Redirect ke list users dengan pesan sukses
-        return redirect()->route('admin.users.index')->with('success', 'User berhasil dinonaktifkan.');
+            // Redirect ke list users dengan pesan sukses
+            return redirect()->route('admin.users.index')->with('success', 'User berhasil dinonaktifkan.');
+
+        } catch (\Exception $e) {
+            \Log::error('USER_CONTROLLER_DESTROY_EXCEPTION', [
+                'admin_id' => auth()->id(),
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->with('error', 'Terjadi kesalahan saat menonaktifkan user. Silakan coba lagi.');
+        }
     }
 
     /**
@@ -226,13 +281,25 @@ class UserController extends Controller
      */
     public function activate(User $user): RedirectResponse
     {
-        // Activate user menggunakan AuthService
-        $this->authService->activateUser($user);
+        try {
+            // Activate user menggunakan AuthService
+            $this->authService->activateUser($user);
 
-        // Log aktivitas activate user ke audit trail
-        $this->auditLogService->logActivateUser(auth()->user(), $user);
+            // Log aktivitas activate user ke audit trail
+            $this->auditLogService->logActivateUser(auth()->user(), $user);
 
-        // Redirect ke list users dengan pesan sukses
-        return redirect()->route('admin.users.index')->with('success', 'User berhasil diaktifkan.');
+            // Redirect ke list users dengan pesan sukses
+            return redirect()->route('admin.users.index')->with('success', 'User berhasil diaktifkan.');
+
+        } catch (\Exception $e) {
+            \Log::error('USER_CONTROLLER_ACTIVATE_EXCEPTION', [
+                'admin_id' => auth()->id(),
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->with('error', 'Terjadi kesalahan saat mengaktifkan user. Silakan coba lagi.');
+        }
     }
 }

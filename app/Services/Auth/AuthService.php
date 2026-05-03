@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 /**
  * AuthService
@@ -19,6 +21,7 @@ use Illuminate\Support\Facades\Hash;
  * 1. Menerima data dari controller yang sudah divalidasi
  * 2. Memproses logika authentication (register, login, logout)
  * 3. Mengembalikan hasil atau throw exception jika ada error
+ * 4. Log semua operasi penting untuk monitoring dan debugging
  *
  * Digunakan oleh: AuthController
  */
@@ -38,31 +41,71 @@ class AuthService
      *
      * @param array $data — data yang berisi email, password, dan data vendor
      * @return User
+     * @throws \Exception — jika terjadi error saat create user atau vendor
      */
     public function register(array $data): User
     {
-        // Buat user baru dengan role vendor
-        $user = User::create([
+        Log::info('AUTH_REGISTER_VENDOR_START', [
             'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-            'role' => 'vendor',
-            'is_active' => true,
-            'email_verified_at' => now(), // Auto-verify untuk MVP
-        ]);
-
-        // Buat vendor record dengan data perusahaan
-        Vendor::create([
-            'user_id' => $user->id,
             'company_name' => $data['company_name'],
-            'pic_name' => $data['pic_name'],
-            'pic_phone' => $data['pic_phone'],
-            'address' => $data['address'],
         ]);
 
-        // Auto-login user yang baru dibuat
-        Auth::login($user);
+        DB::beginTransaction();
 
-        return $user;
+        try {
+            // Buat user baru dengan role vendor
+            $user = User::create([
+                'email' => $data['email'],
+                'password' => Hash::make($data['password']),
+                'role' => 'vendor',
+                'is_active' => true,
+                'email_verified_at' => now(), // Auto-verify untuk MVP
+            ]);
+
+            Log::info('AUTH_REGISTER_VENDOR_USER_CREATED', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
+
+            // Buat vendor record dengan data perusahaan
+            $vendor = Vendor::create([
+                'user_id' => $user->id,
+                'company_name' => $data['company_name'],
+                'pic_name' => $data['pic_name'],
+                'pic_phone' => $data['pic_phone'],
+                'address' => $data['address'],
+            ]);
+
+            Log::info('AUTH_REGISTER_VENDOR_COMPANY_CREATED', [
+                'vendor_id' => $vendor->id,
+                'user_id' => $user->id,
+                'company_name' => $vendor->company_name,
+            ]);
+
+            // Auto-login user yang baru dibuat
+            Auth::login($user);
+
+            DB::commit();
+
+            Log::info('AUTH_REGISTER_VENDOR_SUCCESS', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'company_name' => $vendor->company_name,
+            ]);
+
+            return $user;
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('AUTH_REGISTER_VENDOR_FAILED', [
+                'email' => $data['email'],
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            throw new \Exception('Gagal melakukan registrasi. Silakan coba lagi.');
+        }
     }
 
     /**
@@ -83,24 +126,56 @@ class AuthService
      */
     public function attempt(array $credentials, bool $remember = false): bool
     {
-        // Coba login dengan kredensial yang diberikan
-        if (Auth::attempt($credentials, $remember)) {
-            // Check apakah user aktif
-            $user = Auth::user();
-            
-            if (!$user->is_active) {
-                // Jika user tidak aktif, logout dan return false
-                Auth::logout();
-                return false;
+        Log::info('AUTH_LOGIN_ATTEMPT', [
+            'email' => $credentials['email'],
+            'remember' => $remember,
+        ]);
+
+        try {
+            // Coba login dengan kredensial yang diberikan
+            if (Auth::attempt($credentials, $remember)) {
+                // Check apakah user aktif
+                $user = Auth::user();
+                
+                if (!$user->is_active) {
+                    // Jika user tidak aktif, logout dan return false
+                    Log::warning('AUTH_LOGIN_INACTIVE_USER', [
+                        'user_id' => $user->id,
+                        'email' => $user->email,
+                        'role' => $user->role,
+                    ]);
+
+                    Auth::logout();
+                    return false;
+                }
+
+                // Regenerate session untuk security
+                request()->session()->regenerate();
+                
+                Log::info('AUTH_LOGIN_SUCCESS', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                ]);
+
+                return true;
             }
 
-            // Regenerate session untuk security
-            request()->session()->regenerate();
-            
-            return true;
-        }
+            Log::warning('AUTH_LOGIN_INVALID_CREDENTIALS', [
+                'email' => $credentials['email'],
+            ]);
 
-        return false;
+            return false;
+
+        } catch (\Exception $e) {
+            Log::error('AUTH_LOGIN_FAILED', [
+                'email' => $credentials['email'],
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return false;
+        }
     }
 
     /**
@@ -118,10 +193,33 @@ class AuthService
      */
     public function logout(): void
     {
-        Auth::logout();
+        $user = Auth::user();
 
-        request()->session()->invalidate();
-        request()->session()->regenerateToken();
+        Log::info('AUTH_LOGOUT', [
+            'user_id' => $user?->id,
+            'email' => $user?->email,
+            'role' => $user?->role,
+        ]);
+
+        try {
+            Auth::logout();
+
+            request()->session()->invalidate();
+            request()->session()->regenerateToken();
+
+            Log::info('AUTH_LOGOUT_SUCCESS', [
+                'user_id' => $user?->id,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('AUTH_LOGOUT_FAILED', [
+                'user_id' => $user?->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            throw $e;
+        }
     }
 
     /**
@@ -138,16 +236,45 @@ class AuthService
      *
      * @param array $data — data yang berisi email, password, dan role
      * @return User
+     * @throws \Exception — jika terjadi error saat create user
      */
     public function createUser(array $data): User
     {
-        return User::create([
+        Log::info('AUTH_CREATE_USER_START', [
             'email' => $data['email'],
-            'password' => Hash::make($data['password']),
             'role' => $data['role'],
-            'is_active' => true,
-            'email_verified_at' => now(),
+            'admin_id' => Auth::id(),
         ]);
+
+        try {
+            $user = User::create([
+                'email' => $data['email'],
+                'password' => Hash::make($data['password']),
+                'role' => $data['role'],
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]);
+
+            Log::info('AUTH_CREATE_USER_SUCCESS', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'role' => $user->role,
+                'admin_id' => Auth::id(),
+            ]);
+
+            return $user;
+
+        } catch (\Exception $e) {
+            Log::error('AUTH_CREATE_USER_FAILED', [
+                'email' => $data['email'],
+                'role' => $data['role'],
+                'admin_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            throw new \Exception('Gagal membuat user. Silakan coba lagi.');
+        }
     }
 
     /**
@@ -165,27 +292,53 @@ class AuthService
      * @param User $user — user yang akan diupdate
      * @param array $data — data yang akan diupdate
      * @return User
+     * @throws \Exception — jika terjadi error saat update user
      */
     public function updateUser(User $user, array $data): User
     {
-        // Update email jika ada
-        if (isset($data['email'])) {
-            $user->email = $data['email'];
+        Log::info('AUTH_UPDATE_USER_START', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'admin_id' => Auth::id(),
+            'changes' => array_keys($data),
+        ]);
+
+        try {
+            // Update email jika ada
+            if (isset($data['email'])) {
+                $user->email = $data['email'];
+            }
+
+            // Update password jika ada
+            if (isset($data['password']) && !empty($data['password'])) {
+                $user->password = Hash::make($data['password']);
+            }
+
+            // Update is_active jika ada
+            if (isset($data['is_active'])) {
+                $user->is_active = $data['is_active'];
+            }
+
+            $user->save();
+
+            Log::info('AUTH_UPDATE_USER_SUCCESS', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'admin_id' => Auth::id(),
+            ]);
+
+            return $user;
+
+        } catch (\Exception $e) {
+            Log::error('AUTH_UPDATE_USER_FAILED', [
+                'user_id' => $user->id,
+                'admin_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            throw new \Exception('Gagal mengupdate user. Silakan coba lagi.');
         }
-
-        // Update password jika ada
-        if (isset($data['password']) && !empty($data['password'])) {
-            $user->password = Hash::make($data['password']);
-        }
-
-        // Update is_active jika ada
-        if (isset($data['is_active'])) {
-            $user->is_active = $data['is_active'];
-        }
-
-        $user->save();
-
-        return $user;
     }
 
     /**
@@ -201,13 +354,39 @@ class AuthService
      *
      * @param User $user — user yang akan dideactivate
      * @return User
+     * @throws \Exception — jika terjadi error saat deactivate user
      */
     public function deactivateUser(User $user): User
     {
-        $user->is_active = false;
-        $user->save();
+        Log::info('AUTH_DEACTIVATE_USER_START', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'role' => $user->role,
+            'admin_id' => Auth::id(),
+        ]);
 
-        return $user;
+        try {
+            $user->is_active = false;
+            $user->save();
+
+            Log::info('AUTH_DEACTIVATE_USER_SUCCESS', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'admin_id' => Auth::id(),
+            ]);
+
+            return $user;
+
+        } catch (\Exception $e) {
+            Log::error('AUTH_DEACTIVATE_USER_FAILED', [
+                'user_id' => $user->id,
+                'admin_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            throw new \Exception('Gagal menonaktifkan user. Silakan coba lagi.');
+        }
     }
 
     /**
@@ -222,12 +401,38 @@ class AuthService
      *
      * @param User $user — user yang akan diactivate
      * @return User
+     * @throws \Exception — jika terjadi error saat activate user
      */
     public function activateUser(User $user): User
     {
-        $user->is_active = true;
-        $user->save();
+        Log::info('AUTH_ACTIVATE_USER_START', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'role' => $user->role,
+            'admin_id' => Auth::id(),
+        ]);
 
-        return $user;
+        try {
+            $user->is_active = true;
+            $user->save();
+
+            Log::info('AUTH_ACTIVATE_USER_SUCCESS', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'admin_id' => Auth::id(),
+            ]);
+
+            return $user;
+
+        } catch (\Exception $e) {
+            Log::error('AUTH_ACTIVATE_USER_FAILED', [
+                'user_id' => $user->id,
+                'admin_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            throw new \Exception('Gagal mengaktifkan user. Silakan coba lagi.');
+        }
     }
 }

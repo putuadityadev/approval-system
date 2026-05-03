@@ -77,38 +77,47 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request): RedirectResponse
     {
-        // Ambil data yang sudah divalidasi
-        $credentials = $request->only('email', 'password');
-        $remember = $request->boolean('remember');
+        try {
+            // Ambil data yang sudah divalidasi
+            $credentials = $request->only('email', 'password');
+            $remember = $request->boolean('remember');
 
-        // Attempt login menggunakan AuthService
-        $loginSuccessful = $this->authService->attempt($credentials, $remember);
+            // Attempt login menggunakan AuthService
+            $loginSuccessful = $this->authService->attempt($credentials, $remember);
 
-        if (!$loginSuccessful) {
-            // Login gagal - log failed attempt untuk security monitoring
-            $this->auditLogService->logFailedLogin($credentials['email'], $request);
+            if (!$loginSuccessful) {
+                // Login gagal - log failed attempt untuk security monitoring
+                $this->auditLogService->logFailedLogin($credentials['email'], $request);
 
-            // Return error ke frontend
+                // Return error ke frontend
+                return back()->withErrors([
+                    'email' => 'Email atau password salah.',
+                ])->onlyInput('email');
+            }
+
+            // Login berhasil
+            $user = auth()->user();
+
+            // Log aktivitas login ke audit trail
+            $this->auditLogService->logLogin($user, $request);
+
+            // Ambil dashboard route sebelum redirect
+            $dashboardRoute = $user->getDashboardRoute();
+            
+            // Redirect ke dashboard sesuai role user (7 roles)
+            return redirect()->route($dashboardRoute)->with('success', 'Login berhasil!');
+
+        } catch (\Exception $e) {
+            \Log::error('AUTH_CONTROLLER_LOGIN_EXCEPTION', [
+                'email' => $request->input('email'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return back()->withErrors([
-                'email' => 'Email atau password salah.',
+                'email' => 'Terjadi kesalahan saat login. Silakan coba lagi.',
             ])->onlyInput('email');
         }
-
-        // Login berhasil
-        // Note: session regeneration sudah dilakukan di AuthService::attempt()
-
-        // Ambil user yang baru login
-        $user = auth()->user();
-
-        // Log aktivitas login ke audit trail
-        $this->auditLogService->logLogin($user, $request);
-
-        // Ambil dashboard route sebelum redirect
-        $dashboardRoute = $user->getDashboardRoute();
-        
-        // Redirect ke dashboard sesuai role user (7 roles)
-        // Menggunakan with() untuk memastikan flash message ter-set
-        return redirect()->route($dashboardRoute)->with('success', 'Login berhasil!');
     }
 
     /**
@@ -146,15 +155,27 @@ class AuthController extends Controller
      */
     public function register(RegisterRequest $request): RedirectResponse
     {
-        // Buat user vendor baru beserta data perusahaan menggunakan AuthService
-        // AuthService akan otomatis set role 'vendor' dan login user
-        $user = $this->authService->register($request->validated());
+        try {
+            // Buat user vendor baru beserta data perusahaan menggunakan AuthService
+            $user = $this->authService->register($request->validated());
 
-        // Log aktivitas registrasi ke audit trail
-        $this->auditLogService->logRegister($user);
+            // Log aktivitas registrasi ke audit trail
+            $this->auditLogService->logRegister($user);
 
-        // Redirect ke vendor dashboard dengan pesan sukses
-        return redirect()->route('vendor.dashboard')->with('success', 'Akun berhasil dibuat. Selamat datang!');
+            // Redirect ke vendor dashboard dengan pesan sukses
+            return redirect()->route('vendor.dashboard')->with('success', 'Akun berhasil dibuat. Selamat datang!');
+
+        } catch (\Exception $e) {
+            \Log::error('AUTH_CONTROLLER_REGISTER_EXCEPTION', [
+                'email' => $request->input('email'),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->withErrors([
+                'email' => 'Terjadi kesalahan saat registrasi. Silakan coba lagi.',
+            ])->withInput($request->except('password'));
+        }
     }
 
     /**
@@ -174,16 +195,28 @@ class AuthController extends Controller
      */
     public function logout(Request $request): RedirectResponse
     {
-        // Ambil user sebelum logout untuk logging
-        $user = auth()->user();
+        try {
+            // Ambil user sebelum logout untuk logging
+            $user = auth()->user();
 
-        // Log aktivitas logout ke audit trail
-        $this->auditLogService->logLogout($user);
+            // Log aktivitas logout ke audit trail
+            $this->auditLogService->logLogout($user);
 
-        // Logout user dan hapus session
-        $this->authService->logout();
+            // Logout user dan hapus session
+            $this->authService->logout();
 
-        // Redirect ke login dengan pesan sukses
-        return redirect()->route('login')->with('success', 'Anda berhasil logout.');
+            // Redirect ke login dengan pesan sukses
+            return redirect()->route('login')->with('success', 'Anda berhasil logout.');
+
+        } catch (\Exception $e) {
+            \Log::error('AUTH_CONTROLLER_LOGOUT_EXCEPTION', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            // Tetap redirect ke login meskipun ada error
+            return redirect()->route('login');
+        }
     }
 }

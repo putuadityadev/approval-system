@@ -5,6 +5,7 @@ namespace App\Services\Auth;
 use App\Models\User;
 use App\Models\AuditLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * AuditLogService
@@ -18,6 +19,7 @@ use Illuminate\Http\Request;
  * 1. Menerima data user dan request dari controller
  * 2. Menyimpan log ke database dengan format yang konsisten
  * 3. Log bersifat immutable (tidak bisa diupdate/delete)
+ * 4. Jika gagal menyimpan audit log, log error tapi jangan throw exception (agar tidak mengganggu flow utama)
  *
  * Digunakan oleh: AuthController, AdminController
  */
@@ -40,15 +42,22 @@ class AuditLogService
      */
     public function logLogin(User $user, Request $request): void
     {
-        AuditLog::create([
-            'user_id' => $user->id,
-            'user_email' => $user->email,
-            'user_role' => $user->role,
-            'action' => 'LOGIN',
-            'details' => null,
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ]);
+        try {
+            AuditLog::create([
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+                'user_role' => $user->role,
+                'action' => 'LOGIN',
+                'details' => null,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('AUDIT_LOG_LOGIN_FAILED', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -66,15 +75,22 @@ class AuditLogService
      */
     public function logLogout(User $user): void
     {
-        AuditLog::create([
-            'user_id' => $user->id,
-            'user_email' => $user->email,
-            'user_role' => $user->role,
-            'action' => 'LOGOUT',
-            'details' => null,
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ]);
+        try {
+            AuditLog::create([
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+                'user_role' => $user->role,
+                'action' => 'LOGOUT',
+                'details' => null,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('AUDIT_LOG_LOGOUT_FAILED', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -92,24 +108,31 @@ class AuditLogService
      */
     public function logRegister(User $user): void
     {
-        $details = null;
-        
-        // Jika user adalah vendor, simpan company_name di details
-        if ($user->isVendor() && $user->vendor) {
-            $details = [
-                'company_name' => $user->vendor->company_name,
-            ];
-        }
+        try {
+            $details = null;
+            
+            // Jika user adalah vendor, simpan company_name di details
+            if ($user->isVendor() && $user->vendor) {
+                $details = [
+                    'company_name' => $user->vendor->company_name,
+                ];
+            }
 
-        AuditLog::create([
-            'user_id' => $user->id,
-            'user_email' => $user->email,
-            'user_role' => $user->role,
-            'action' => 'REGISTER',
-            'details' => $details,
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ]);
+            AuditLog::create([
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+                'user_role' => $user->role,
+                'action' => 'REGISTER',
+                'details' => $details,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('AUDIT_LOG_REGISTER_FAILED', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -129,15 +152,22 @@ class AuditLogService
      */
     public function logFailedLogin(string $email, Request $request): void
     {
-        AuditLog::create([
-            'user_id' => null,
-            'user_email' => $email,
-            'user_role' => 'unknown',
-            'action' => 'FAILED_LOGIN',
-            'details' => null,
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ]);
+        try {
+            AuditLog::create([
+                'user_id' => null,
+                'user_email' => $email,
+                'user_role' => 'unknown',
+                'action' => 'FAILED_LOGIN',
+                'details' => null,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('AUDIT_LOG_FAILED_LOGIN_FAILED', [
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -155,15 +185,22 @@ class AuditLogService
      */
     public function logPasswordReset(User $user): void
     {
-        AuditLog::create([
-            'user_id' => $user->id,
-            'user_email' => $user->email,
-            'user_role' => $user->role,
-            'action' => 'PASSWORD_RESET',
-            'details' => null,
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ]);
+        try {
+            AuditLog::create([
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+                'user_role' => $user->role,
+                'action' => 'PASSWORD_RESET',
+                'details' => null,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('AUDIT_LOG_PASSWORD_RESET_FAILED', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -182,18 +219,26 @@ class AuditLogService
      */
     public function logCreateUser(User $admin, User $createdUser): void
     {
-        AuditLog::create([
-            'user_id' => $admin->id,
-            'user_email' => $admin->email,
-            'user_role' => $admin->role,
-            'action' => 'CREATE_USER',
-            'details' => [
-                'created_user_email' => $createdUser->email,
-                'created_user_role' => $createdUser->role,
-            ],
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ]);
+        try {
+            AuditLog::create([
+                'user_id' => $admin->id,
+                'user_email' => $admin->email,
+                'user_role' => $admin->role,
+                'action' => 'CREATE_USER',
+                'details' => [
+                    'created_user_email' => $createdUser->email,
+                    'created_user_role' => $createdUser->role,
+                ],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('AUDIT_LOG_CREATE_USER_FAILED', [
+                'admin_id' => $admin->id,
+                'created_user_id' => $createdUser->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -212,18 +257,26 @@ class AuditLogService
      */
     public function logUpdateUser(User $admin, User $updatedUser): void
     {
-        AuditLog::create([
-            'user_id' => $admin->id,
-            'user_email' => $admin->email,
-            'user_role' => $admin->role,
-            'action' => 'UPDATE_USER',
-            'details' => [
-                'updated_user_email' => $updatedUser->email,
-                'updated_user_role' => $updatedUser->role,
-            ],
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ]);
+        try {
+            AuditLog::create([
+                'user_id' => $admin->id,
+                'user_email' => $admin->email,
+                'user_role' => $admin->role,
+                'action' => 'UPDATE_USER',
+                'details' => [
+                    'updated_user_email' => $updatedUser->email,
+                    'updated_user_role' => $updatedUser->role,
+                ],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('AUDIT_LOG_UPDATE_USER_FAILED', [
+                'admin_id' => $admin->id,
+                'updated_user_id' => $updatedUser->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -242,18 +295,26 @@ class AuditLogService
      */
     public function logDeactivateUser(User $admin, User $deactivatedUser): void
     {
-        AuditLog::create([
-            'user_id' => $admin->id,
-            'user_email' => $admin->email,
-            'user_role' => $admin->role,
-            'action' => 'DEACTIVATE_USER',
-            'details' => [
-                'deactivated_user_email' => $deactivatedUser->email,
-                'deactivated_user_role' => $deactivatedUser->role,
-            ],
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ]);
+        try {
+            AuditLog::create([
+                'user_id' => $admin->id,
+                'user_email' => $admin->email,
+                'user_role' => $admin->role,
+                'action' => 'DEACTIVATE_USER',
+                'details' => [
+                    'deactivated_user_email' => $deactivatedUser->email,
+                    'deactivated_user_role' => $deactivatedUser->role,
+                ],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('AUDIT_LOG_DEACTIVATE_USER_FAILED', [
+                'admin_id' => $admin->id,
+                'deactivated_user_id' => $deactivatedUser->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -272,17 +333,25 @@ class AuditLogService
      */
     public function logActivateUser(User $admin, User $activatedUser): void
     {
-        AuditLog::create([
-            'user_id' => $admin->id,
-            'user_email' => $admin->email,
-            'user_role' => $admin->role,
-            'action' => 'ACTIVATE_USER',
-            'details' => [
-                'activated_user_email' => $activatedUser->email,
-                'activated_user_role' => $activatedUser->role,
-            ],
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ]);
+        try {
+            AuditLog::create([
+                'user_id' => $admin->id,
+                'user_email' => $admin->email,
+                'user_role' => $admin->role,
+                'action' => 'ACTIVATE_USER',
+                'details' => [
+                    'activated_user_email' => $activatedUser->email,
+                    'activated_user_role' => $activatedUser->role,
+                ],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('AUDIT_LOG_ACTIVATE_USER_FAILED', [
+                'admin_id' => $admin->id,
+                'activated_user_id' => $activatedUser->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

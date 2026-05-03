@@ -291,6 +291,228 @@ foreach ($users as $user) {
 
 ---
 
+## 📊 ERROR HANDLING & LOGGING (WAJIB)
+
+### Prinsip Error Handling
+
+**SEMUA** Service methods dan Controller methods **WAJIB** menggunakan try-catch untuk error handling yang proper.
+
+### Format Logging
+
+```php
+// ✅ BENAR — Log dengan key name yang jelas dan context lengkap
+use Illuminate\Support\Facades\Log;
+
+try {
+    // Operasi bisnis logic
+    $user = User::create($data);
+    
+    Log::info('AUTH_CREATE_USER_SUCCESS', [
+        'user_id' => $user->id,
+        'email' => $user->email,
+        'admin_id' => Auth::id(),
+    ]);
+    
+    return $user;
+    
+} catch (\Exception $e) {
+    Log::error('AUTH_CREATE_USER_FAILED', [
+        'email' => $data['email'],
+        'admin_id' => Auth::id(),
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+    ]);
+    
+    throw new \Exception('Gagal membuat user. Silakan coba lagi.');
+}
+```
+
+### Naming Convention untuk Log Keys
+
+Format: `{MODULE}_{ACTION}_{STATUS}`
+
+**Contoh:**
+- `AUTH_LOGIN_ATTEMPT` — info saat user coba login
+- `AUTH_LOGIN_SUCCESS` — info saat login berhasil
+- `AUTH_LOGIN_FAILED` — error saat login gagal
+- `AUTH_REGISTER_VENDOR_START` — info saat mulai registrasi vendor
+- `AUTH_REGISTER_VENDOR_SUCCESS` — info saat registrasi berhasil
+- `USER_CONTROLLER_STORE_EXCEPTION` — error exception di controller
+- `PASSWORD_RESET_TOKEN_EXPIRED` — warning saat token expired
+
+**Module Names:**
+- `AUTH` — Authentication related
+- `USER` — User management
+- `PASSWORD_RESET` — Password reset flow
+- `AUDIT_LOG` — Audit logging
+- `APPROVAL` — Approval workflow
+- `DOCUMENT` — Document management
+- `QR_CODE` — QR code generation/scanning
+
+**Status:**
+- `START` — Operasi dimulai
+- `SUCCESS` — Operasi berhasil
+- `FAILED` — Operasi gagal (expected error)
+- `EXCEPTION` — Unexpected exception
+- `ATTEMPT` — Percobaan operasi
+- `INVALID` — Validasi gagal
+- `EXPIRED` — Token/session expired
+- `NOT_FOUND` — Resource tidak ditemukan
+
+### Level Logging
+
+```php
+// INFO — Operasi normal yang berhasil
+Log::info('AUTH_LOGIN_SUCCESS', [...]);
+
+// WARNING — Situasi yang perlu perhatian tapi tidak error
+Log::warning('AUTH_LOGIN_INACTIVE_USER', [...]);
+
+// ERROR — Error yang perlu segera ditangani
+Log::error('AUTH_CREATE_USER_FAILED', [...]);
+```
+
+### Context Data yang Harus Di-log
+
+**Minimal context:**
+- `user_id` atau `admin_id` — siapa yang melakukan operasi
+- `email` — identifier user
+- `error` — error message jika ada error
+- `trace` — stack trace untuk debugging (hanya di error log)
+
+**Additional context (sesuai kebutuhan):**
+- `ip_address` — IP address user
+- `user_agent` — Browser/device info
+- `request_id` — Unique request identifier
+- `duration` — Waktu eksekusi operasi
+- Data spesifik operasi (company_name, role, dll)
+
+### Error Handling di Service
+
+```php
+// Service method WAJIB throw exception jika gagal
+public function createUser(array $data): User
+{
+    Log::info('AUTH_CREATE_USER_START', [
+        'email' => $data['email'],
+        'admin_id' => Auth::id(),
+    ]);
+
+    try {
+        $user = User::create([...]);
+        
+        Log::info('AUTH_CREATE_USER_SUCCESS', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+        ]);
+        
+        return $user;
+        
+    } catch (\Exception $e) {
+        Log::error('AUTH_CREATE_USER_FAILED', [
+            'email' => $data['email'],
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+        
+        // Throw exception dengan user-friendly message
+        throw new \Exception('Gagal membuat user. Silakan coba lagi.');
+    }
+}
+```
+
+### Error Handling di Controller
+
+```php
+// Controller catch exception dari service dan return response yang sesuai
+public function store(CreateUserRequest $request): RedirectResponse
+{
+    try {
+        $user = $this->authService->createUser($request->validated());
+        
+        return redirect()->route('admin.users.index')
+            ->with('success', 'User berhasil dibuat.');
+            
+    } catch (\Exception $e) {
+        Log::error('USER_CONTROLLER_STORE_EXCEPTION', [
+            'admin_id' => auth()->id(),
+            'email' => $request->input('email'),
+            'error' => $e->getMessage(),
+        ]);
+        
+        return back()->withErrors([
+            'email' => 'Terjadi kesalahan saat membuat user. Silakan coba lagi.',
+        ])->withInput();
+    }
+}
+```
+
+### Database Transaction dengan Logging
+
+```php
+use Illuminate\Support\Facades\DB;
+
+DB::beginTransaction();
+
+try {
+    // Multiple database operations
+    $user = User::create([...]);
+    $vendor = Vendor::create([...]);
+    
+    DB::commit();
+    
+    Log::info('AUTH_REGISTER_VENDOR_SUCCESS', [
+        'user_id' => $user->id,
+        'vendor_id' => $vendor->id,
+    ]);
+    
+} catch (\Exception $e) {
+    DB::rollBack();
+    
+    Log::error('AUTH_REGISTER_VENDOR_FAILED', [
+        'email' => $data['email'],
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+    ]);
+    
+    throw $e;
+}
+```
+
+### Audit Log Error Handling
+
+```php
+// Audit log failure TIDAK BOLEH mengganggu flow utama
+// Gunakan try-catch di dalam audit log method
+public function logLogin(User $user, Request $request): void
+{
+    try {
+        AuditLog::create([...]);
+    } catch (\Exception $e) {
+        // Hanya log error, jangan throw exception
+        Log::error('AUDIT_LOG_LOGIN_FAILED', [
+            'user_id' => $user->id,
+            'error' => $e->getMessage(),
+        ]);
+    }
+}
+```
+
+### Checklist Error Handling
+
+Sebelum commit kode, pastikan:
+
+1. ✅ Semua Service methods punya try-catch
+2. ✅ Semua Controller methods punya try-catch
+3. ✅ Semua operasi database punya error handling
+4. ✅ Log dengan key name yang jelas (MODULE_ACTION_STATUS)
+5. ✅ Log context lengkap (user_id, email, error, trace)
+6. ✅ User-friendly error message untuk frontend
+7. ✅ Database transaction dengan rollback jika gagal
+8. ✅ Audit log tidak mengganggu flow utama
+
+---
+
 ## 🎨 STYLING & UI
 
 - Gunakan **Tailwind CSS** sebagai utility-first styling
