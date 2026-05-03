@@ -33,35 +33,36 @@ class CheckRole
      *
      * Apa yang dilakukan method ini:
      * Memvalidasi role user dan mengembalikan 403 jika tidak sesuai.
-     * Support multiple roles dengan separator koma.
-     *
-     * Cara kerjanya:
-     * 1. Ambil user yang sedang login dari request
-     * 2. Parse parameter role (bisa single atau multiple dengan separator koma)
-     * 3. Cek apakah role user ada dalam daftar role yang diizinkan
-     * 4. Jika tidak cocok, abort dengan 403 Forbidden
-     * 5. Jika cocok, lanjutkan ke request berikutnya
+     * Support multiple roles (diterima sebagai variable-length arguments dari Laravel).
      *
      * @param Request $request — HTTP request yang masuk
      * @param Closure $next — Closure untuk melanjutkan request ke middleware/controller berikutnya
-     * @param string $roles — Role yang dibutuhkan untuk mengakses route (bisa single atau multiple dengan separator koma)
+     * @param string ...$roles — Role yang dibutuhkan untuk mengakses route
      * @return Response — Response dari request atau abort 403
      */
-    public function handle(Request $request, Closure $next, string $roles): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         // Ambil user yang sedang login
         $user = $request->user();
 
         // Jika user tidak login, return 403
         if (!$user) {
+            \Illuminate\Support\Facades\Log::error('CheckRole Failed: User is null');
             abort(403, 'Anda tidak memiliki akses ke halaman ini.');
         }
 
-        // Parse roles (bisa multiple dengan separator koma)
-        $allowedRoles = explode(',', $roles);
+        \Illuminate\Support\Facades\Log::info('CheckRole Middleware', [
+            'user_role' => $user->role,
+            'allowed_roles' => $roles,
+            'user_id' => $user->id
+        ]);
 
         // Cek apakah role user ada dalam daftar role yang diizinkan
-        if (!in_array($user->role, $allowedRoles)) {
+        if (!in_array($user->role, $roles)) {
+            \Illuminate\Support\Facades\Log::error('CheckRole Failed', [
+                'user_role' => $user->role,
+                'allowed_roles' => $roles
+            ]);
             abort(403, 'Anda tidak memiliki akses ke halaman ini.');
         }
 

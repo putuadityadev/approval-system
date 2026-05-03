@@ -30,15 +30,18 @@ class DatabaseSeeder extends Seeder
      *
      * Cara kerjanya:
      * 1. Panggil SuperAdminSeeder untuk membuat akun super admin default
-     * 2. Seeder lain bisa ditambahkan di sini sesuai kebutuhan
+     * 2. Panggil ApproverSeeder untuk membuat akun approver (4 level)
+     * 3. Panggil SecuritySeeder untuk membuat akun security
      *
      * @return void
      */
     public function run(): void
     {
-        // Buat akun super admin default
+        // Buat akun default untuk semua role
         $this->call([
             SuperAdminSeeder::class,
+            ApproverSeeder::class,
+            SecuritySeeder::class,
         ]);
     }
 }

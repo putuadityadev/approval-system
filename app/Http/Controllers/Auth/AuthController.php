@@ -94,15 +94,21 @@ class AuthController extends Controller
             ])->onlyInput('email');
         }
 
-        // Login berhasil - regenerate session untuk keamanan
-        $request->session()->regenerate();
+        // Login berhasil
+        // Note: session regeneration sudah dilakukan di AuthService::attempt()
+
+        // Ambil user yang baru login
+        $user = auth()->user();
 
         // Log aktivitas login ke audit trail
-        $this->auditLogService->logLogin(auth()->user(), $request);
+        $this->auditLogService->logLogin($user, $request);
 
+        // Ambil dashboard route sebelum redirect
+        $dashboardRoute = $user->getDashboardRoute();
+        
         // Redirect ke dashboard sesuai role user (7 roles)
-        $dashboardRoute = auth()->user()->getDashboardRoute();
-        return redirect()->intended(route($dashboardRoute));
+        // Menggunakan with() untuk memastikan flash message ter-set
+        return redirect()->route($dashboardRoute)->with('success', 'Login berhasil!');
     }
 
     /**
