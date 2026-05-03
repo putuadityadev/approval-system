@@ -60,6 +60,19 @@ return [
             'report' => false,
         ],
 
+        'minio' => [
+            'driver' => 's3',
+            'key' => env('MINIO_ROOT_USER'),
+            'secret' => env('MINIO_ROOT_PASSWORD'),
+            'region' => env('MINIO_REGION', 'us-east-1'),
+            'bucket' => env('MINIO_BUCKET'),
+            'url' => env('MINIO_ENDPOINT'),
+            'endpoint' => env('MINIO_ENDPOINT'),
+            'use_path_style_endpoint' => env('MINIO_USE_PATH_STYLE_ENDPOINT', true),
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*
@@ -76,5 +89,23 @@ return [
     'links' => [
         public_path('storage') => storage_path('app/public'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | File Upload Limits
+    |--------------------------------------------------------------------------
+    |
+    | Konfigurasi batas ukuran file upload untuk berbagai tipe file.
+    | Nilai dalam KB (kilobytes).
+    |
+    | VPS Storage: 100GB total
+    | MinIO allocation: ~20GB untuk file storage
+    | Estimasi: 2000 requests x 5MB form + 5 photos x 5MB = ~60GB max
+    |
+    */
+
+    'max_image_size' => env('MAX_IMAGE_SIZE', 5120), // 5MB in KB
+    'max_document_size' => env('MAX_DOCUMENT_SIZE', 10240), // 10MB in KB
+    'max_evidence_photos' => env('MAX_EVIDENCE_PHOTOS', 5), // Max 5 photos per evidence
 
 ];

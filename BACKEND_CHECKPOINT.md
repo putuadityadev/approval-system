@@ -12,6 +12,8 @@ Sistem autentikasi baru dengan 7 roles telah selesai diimplementasikan dan siap 
 - ✅ Table vendors untuk data perusahaan vendor
 - ✅ Table audit_logs untuk tracking aktivitas
 - ✅ SuperAdminSeeder dengan credentials default
+- ✅ ApproverSeeder dengan 4 approver accounts untuk testing
+- ✅ SecuritySeeder dengan 1 security account untuk testing
 
 ### 2. Models (100%)
 - ✅ User model dengan helper methods (isSuperAdmin(), isVendor(), isApprover(), isSecurity())
@@ -34,9 +36,10 @@ Sistem autentikasi baru dengan 7 roles telah selesai diimplementasikan dan siap 
 - ✅ UserController - CRUD lengkap untuk Super Admin manage users
 
 ### 6. Middleware (100%)
-- ✅ CheckRole - updated untuk support multiple roles dengan separator koma
+- ✅ CheckRole - updated untuk support multiple roles dengan separator koma + trim untuk handle spasi
 - ✅ EnsureActive - middleware baru untuk cek status is_active user
 - ✅ Middleware aliases registered di bootstrap/app.php
+- ✅ Bug fix: Tambahkan trim() di CheckRole untuk handle spasi setelah explode
 
 ### 7. Routes (100%)
 - ✅ Guest routes (login, register, forgot password, reset password)
@@ -66,7 +69,7 @@ Sistem autentikasi baru dengan 7 roles telah selesai diimplementasikan dan siap 
 
 Setelah update kode, selalu clear cache:
 ```bash
-docker exec -it laravel_app php artisan optimize:clear
+docker exec laravel_app php artisan optimize:clear
 ```
 
 ### 1. Setup Database
@@ -74,19 +77,22 @@ docker exec -it laravel_app php artisan optimize:clear
 Jika menggunakan Docker:
 ```bash
 docker-compose up -d
-docker exec -it laravel_app php artisan migrate:fresh --seed
+docker exec laravel_app php artisan migrate:fresh --seed
 ```
 
-Jika menggunakan PHP lokal:
-```bash
-php artisan migrate:fresh --seed
-```
+Seeder akan membuat:
+- 1 Super Admin
+- 4 Approver (Dept, Ops, Finance, GM)
+- 1 Security
 
-### 2. Login sebagai Super Admin
+### 2. Testing Credentials
 
-Credentials default:
-- Email: `superadmin@mall.com`
-- Password: `SuperAdmin123!`
+Lihat file `TESTING_CREDENTIALS.md` untuk daftar lengkap credentials testing.
+
+**Quick Test:**
+- Super Admin: `superadmin@mall.com` / `SuperAdmin123!`
+- Approver Finance: `approverfinance@mall.com` / `Approver123!`
+- Security: `security@mall.com` / `Security123!`
 
 ### 3. Test Flow Super Admin
 
@@ -135,13 +141,16 @@ Setelah Super Admin membuat user dengan role berbeda, test login dengan user ter
 ### Backend
 - `database/migrations/2026_05_01_000001_create_new_auth_system.php` - Schema database baru
 - `database/seeders/SuperAdminSeeder.php` - Seeder Super Admin
+- `database/seeders/ApproverSeeder.php` - Seeder 4 Approver accounts
+- `database/seeders/SecuritySeeder.php` - Seeder Security account
+- `database/seeders/DatabaseSeeder.php` - Main seeder yang memanggil semua seeder
 - `app/Models/User.php` - User model dengan 7 roles
 - `app/Models/Vendor.php` - Vendor model
 - `app/Services/Auth/AuthService.php` - Service untuk auth logic
 - `app/Services/Auth/AuditLogService.php` - Service untuk audit trail
 - `app/Http/Controllers/Auth/AuthController.php` - Controller auth
 - `app/Http/Controllers/Admin/UserController.php` - Controller user management
-- `app/Http/Middleware/CheckRole.php` - Middleware role check
+- `app/Http/Middleware/CheckRole.php` - Middleware role check (dengan trim fix)
 - `app/Http/Middleware/EnsureActive.php` - Middleware active status check
 - `routes/web.php` - Semua routes untuk 7 roles
 
@@ -176,7 +185,16 @@ Setelah testing berhasil, development selanjutnya bisa fokus ke:
 - Frontend menggunakan Inertia.js + React
 - Styling dengan Tailwind CSS
 
+## Troubleshooting
+
+Jika mengalami masalah 403 Forbidden saat login dengan approver:
+1. Lihat file `TROUBLESHOOTING_403.md` untuk panduan lengkap
+2. Pastikan sudah clear cache: `docker exec laravel_app php artisan optimize:clear`
+3. Gunakan credentials dari `TESTING_CREDENTIALS.md`
+4. Cek browser console dan network tab untuk error detail
+
 ---
 
-**Implementasi selesai pada:** 1 Mei 2026
+**Implementasi selesai pada:** 2 Mei 2026
 **Status:** Ready for Testing ✅
+**Last Update:** Fix CheckRole middleware trim + Add testing seeders
