@@ -2,33 +2,14 @@
  * Input
  *
  * Komponen ini digunakan untuk:
- * - Menampilkan input field dengan label dan error handling
- * - Menampilkan error message di bawah input jika ada validasi error
- * - Styling konsisten dengan Tailwind CSS dan responsive
- *
- * Cara kerjanya:
- * 1. Menerima props untuk konfigurasi input (type, name, value, dll)
- * 2. Render label di atas input menggunakan komponen Label
- * 3. Menampilkan input field dengan styling yang sesuai
- * 4. Jika ada error, tampilkan border merah dan error message di bawah input
- * 5. Memanggil onChange handler saat user mengetik
- *
- * Props:
- * - type: string (default: 'text') — tipe input HTML (text/email/password/number/dll)
- * - name: string (required) — nama input untuk form submission
- * - value: string/number — nilai input (controlled component)
- * - onChange: function (required) — fungsi yang dipanggil saat input berubah
- * - error: string — pesan error validasi (jika ada)
- * - label: string — label yang ditampilkan di atas input
- * - placeholder: string — placeholder text di dalam input
- * - required: boolean (default: false) — apakah input wajib diisi
- * - disabled: boolean (default: false) — apakah input disabled
- * - className: string — class tambahan untuk custom styling
+ * - Menampilkan input field dengan label, icon, dan error handling
+ * - Styling modern dan terhubung dengan shadcn/ui theme
  */
 
 import Label from './Label';
+import { forwardRef } from 'react';
 
-function Input({
+const Input = forwardRef(({
     type = 'text',
     name,
     value,
@@ -39,73 +20,88 @@ function Input({
     required = false,
     disabled = false,
     className = '',
-}) {
-    /**
-     * getInputClasses
-     *
-     * Menentukan class Tailwind untuk input field.
-     * Jika ada error, border jadi merah.
-     * Jika disabled, background jadi abu-abu.
-     */
+    icon = null,
+    rightElement = null,
+    labelRight = null,
+    ...props
+}, ref) => {
     const getInputClasses = () => {
         const baseClasses =
-            'block w-full px-3 py-2 border rounded-md shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-offset-0 transition-colors duration-200';
+            'block w-full py-3 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 transition-all duration-200 placeholder:text-slate-400 bg-background dark:bg-slate-800 text-foreground';
 
         const normalClasses =
-            'border-gray-300 focus:border-blue-500 focus:ring-blue-500';
+            'border border-input focus:border-primary focus:ring-primary/20';
         const errorClasses =
-            'border-red-500 focus:border-red-500 focus:ring-red-500';
-        const disabledClasses = 'bg-gray-100 cursor-not-allowed opacity-60';
+            'border border-destructive focus:border-destructive focus:ring-destructive/20';
+        const disabledClasses = 'bg-slate-100 dark:bg-slate-900 cursor-not-allowed opacity-60';
 
         let classes = `${baseClasses} `;
+        if (disabled) classes += disabledClasses;
+        else if (error) classes += errorClasses;
+        else classes += normalClasses;
 
-        if (disabled) {
-            classes += disabledClasses;
-        } else if (error) {
-            classes += errorClasses;
-        } else {
-            classes += normalClasses;
-        }
+        // padding adjustments based on icons
+        if (icon) classes += ' pl-10 pr-3';
+        else classes += ' px-3';
+        
+        if (rightElement) classes += ' pr-10';
 
         return classes;
     };
 
     return (
         <div className={`${className}`}>
-            {/* Label - tampil jika prop label ada */}
             {label && (
-                <Label htmlFor={name} required={required}>
-                    {label}
-                </Label>
+                <div className="flex justify-between items-end mb-2">
+                    <Label htmlFor={name} required={required} className="mb-0">
+                        {label}
+                    </Label>
+                    {labelRight && (
+                        <div className="text-sm">{labelRight}</div>
+                    )}
+                </div>
             )}
 
-            {/* Input field */}
-            <input
-                type={type}
-                id={name}
-                name={name}
-                value={value}
-                onChange={onChange}
-                placeholder={placeholder}
-                required={required}
-                disabled={disabled}
-                className={getInputClasses()}
-                aria-invalid={error ? 'true' : 'false'}
-                aria-describedby={error ? `${name}-error` : undefined}
-            />
+            <div className="relative">
+                {icon && (
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="material-symbols-outlined text-slate-400 text-xl">{icon}</span>
+                    </div>
+                )}
+                
+                <input
+                    ref={ref}
+                    type={type}
+                    id={name}
+                    name={name}
+                    value={value}
+                    onChange={onChange}
+                    placeholder={placeholder}
+                    required={required}
+                    disabled={disabled}
+                    className={getInputClasses()}
+                    aria-invalid={error ? 'true' : 'false'}
+                    aria-describedby={error ? `${name}-error` : undefined}
+                    {...props}
+                />
 
-            {/* Error message - tampil jika ada error */}
+                {rightElement && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                        {rightElement}
+                    </div>
+                )}
+            </div>
+
             {error && (
-                <p
-                    id={`${name}-error`}
-                    className="mt-1 text-sm text-red-600"
-                    role="alert"
-                >
+                <p id={`${name}-error`} className="mt-1 text-sm text-destructive font-medium" role="alert">
                     {error}
                 </p>
             )}
         </div>
     );
-}
+});
+
+// Setting display name for debugging since it's wrapped in forwardRef
+Input.displayName = 'Input';
 
 export default Input;

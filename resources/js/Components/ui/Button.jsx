@@ -2,24 +2,9 @@
  * Button
  *
  * Komponen ini digunakan untuk:
- * - Menampilkan tombol dengan berbagai variant (primary, secondary, danger)
+ * - Menampilkan tombol dengan berbagai variant (primary, secondary, danger, outline)
  * - Menangani loading state dengan spinner
  * - Disable tombol saat sedang processing
- *
- * Cara kerjanya:
- * 1. Menerima props untuk konfigurasi tampilan dan behavior
- * 2. Menentukan styling berdasarkan variant yang dipilih
- * 3. Menampilkan spinner dan disable tombol jika loading=true
- * 4. Memanggil onClick handler saat tombol diklik (jika tidak disabled/loading)
- *
- * Props:
- * - type: string (default: 'button') — tipe tombol HTML (button/submit/reset)
- * - variant: string (default: 'primary') — variant styling (primary/secondary/danger)
- * - disabled: boolean (default: false) — apakah tombol disabled
- * - loading: boolean (default: false) — apakah tombol dalam state loading
- * - children: node — konten di dalam tombol (text/icon)
- * - onClick: function — fungsi yang dipanggil saat tombol diklik
- * - className: string — class tambahan untuk custom styling
  */
 
 function Button({
@@ -30,32 +15,25 @@ function Button({
     children,
     onClick,
     className = '',
+    ...props
 }) {
-    /**
-     * getVariantClasses
-     *
-     * Menentukan class Tailwind berdasarkan variant yang dipilih.
-     * Setiap variant punya warna dan hover state yang berbeda.
-     */
     const getVariantClasses = () => {
         const variants = {
             primary:
-                'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500',
+                'bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm focus:ring-primary',
             secondary:
-                'bg-gray-600 hover:bg-gray-700 text-white focus:ring-gray-500',
+                'bg-secondary hover:bg-secondary/80 text-secondary-foreground shadow-sm focus:ring-secondary',
             danger:
-                'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
+                'bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-sm focus:ring-destructive',
+            outline:
+                'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+            ghost:
+                'hover:bg-accent hover:text-accent-foreground'
         };
 
         return variants[variant] || variants.primary;
     };
 
-    /**
-     * getDisabledClasses
-     *
-     * Menentukan class untuk state disabled/loading.
-     * Tombol jadi opacity rendah dan cursor not-allowed.
-     */
     const getDisabledClasses = () => {
         if (disabled || loading) {
             return 'opacity-50 cursor-not-allowed';
@@ -63,21 +41,12 @@ function Button({
         return '';
     };
 
-    /**
-     * handleClick
-     *
-     * Handler untuk event click.
-     * Tidak akan memanggil onClick jika tombol disabled atau loading.
-     */
     const handleClick = (e) => {
         if (disabled || loading) {
             e.preventDefault();
             return;
         }
-
-        if (onClick) {
-            onClick(e);
-        }
+        if (onClick) onClick(e);
     };
 
     return (
@@ -87,21 +56,19 @@ function Button({
             disabled={disabled || loading}
             className={`
                 inline-flex items-center justify-center
-                px-4 py-2
-                border border-transparent
-                rounded-md
-                font-medium text-sm
-                focus:outline-none focus:ring-2 focus:ring-offset-2
-                transition-colors duration-200
+                px-4 py-3 border border-transparent rounded-lg
+                font-bold text-sm tracking-wide uppercase
+                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background
+                transition-all duration-200
                 ${getVariantClasses()}
                 ${getDisabledClasses()}
                 ${className}
             `}
+            {...props}
         >
-            {/* Spinner - tampil jika loading=true */}
             {loading && (
                 <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    className="animate-spin -ml-1 mr-2 h-4 w-4"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -121,8 +88,6 @@ function Button({
                     ></path>
                 </svg>
             )}
-
-            {/* Konten tombol */}
             {children}
         </button>
     );
