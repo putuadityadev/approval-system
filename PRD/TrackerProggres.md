@@ -109,8 +109,9 @@
 
 | Feature | PRD Requirement | Current Status | Priority | Complexity | Est. Hours |
 |---------|----------------|----------------|----------|------------|------------|
-| **0. Infrastructure Setup** | MinIO object storage + backup strategy | ✅ Complete | 🔴 HIGH | Medium | 3h |
-| **1. Database Schema** | requests, sikmb_details, sikmb_items, sik_details, approval_logs, request_evidences | ❌ Not Started | 🔴 HIGH | Medium | 2h |
+| **0. Infrastructure Setup** | MinIO object storage + backup strategy | ✅ Complete | 🔴 HIGH | Medium | 4h |
+| **1. Database Schema** | requests, sikmb_details, sikmb_items, sik_details, approval_logs, request_evidences | ✅ Complete | 🔴 HIGH | Medium | 6h |
+| **2. Models** | Request, SikmDetail, SikmItem, SikDetail, ApprovalLog, RequestEvidence | ✅ Complete | 🔴 HIGH | Medium | (included in #1) |
 | **2. Models** | Request, SikmDetail, SikmItem, SikDetail, ApprovalLog, RequestEvidence | ❌ Not Started | 🔴 HIGH | Medium | 2h |
 | **3. Request Submission** | Vendor submit SIK/SIKMB dengan form input | ❌ Not Started | 🔴 HIGH | High | 12h |
 | **4. Multi-Level Approval** | 4-level sequential approval (Dept→Ops→Finance→GM) | ❌ Not Started | 🔴 HIGH | High | 13h |
@@ -127,7 +128,7 @@
 
 ## 📋 DETAILED BREAKDOWN: Phase 2
 
-### **Sprint 0: Infrastructure Setup (CURRENT)** ✅ 100%
+### Sprint 0: Infrastructure Setup (CURRENT)** ✅ 100%
 **Goal:** Setup MinIO object storage untuk file management
 
 | Task | Est. Time | Status | Assignee | Notes |
@@ -137,10 +138,11 @@
 | Configure MinIO disk di filesystems.php | 0.5h | ✅ | - | With path-style endpoint |
 | Create StorageService.php | 1h | ✅ | - | Upload/download/delete methods |
 | Create backup strategy documentation | 0.5h | ✅ | - | Daily/weekly/monthly backup |
-| Test MinIO connection | 0.5h | ⏳ | - | Via tinker & StorageService |
+| Test MinIO connection | 0.5h | ✅ | - | Via AWS SDK & Laravel Storage |
+| Create bucket & set policies | 0.5h | ✅ | - | approval-system bucket ready |
 
-**Total:** 3 hours  
-**Deliverable:** MinIO ready untuk Phase 2 development
+**Total:** 4 hours (actual)  
+**Deliverable:** ✅ MinIO ready untuk Phase 2 development
 
 **Files Created:**
 ```bash
@@ -389,13 +391,13 @@ resources/js/Components/shared/StatisticsCard.jsx
 
 | Sprint | Focus | Hours | Status | Start Date | End Date |
 |--------|-------|-------|--------|------------|----------|
-| Sprint 0 | Infrastructure Setup | 3h | ✅ | 4 Mei 2026 | 4 Mei 2026 |
-| Sprint 1 | Database Foundation | 6h | ❌ | - | - |
+| Sprint 0 | Infrastructure Setup | 4h | ✅ | 4 Mei 2026 | 5 Mei 2026 |
+| Sprint 1 | Database Foundation | 6h | ✅ | 5 Mei 2026 | 5 Mei 2026 |
 | Sprint 2 | Request Submission | 12h | ❌ | - | - |
 | Sprint 3 | Approval Workflow | 13h | ❌ | - | - |
 | Sprint 4 | QR & Security | 11h | ❌ | - | - |
 | Sprint 5 | Polish & Enhancement | 11.5h | ❌ | - | - |
-| **TOTAL** | **Phase 2 MVP** | **56.5 hours** | **5%** | 4 Mei 2026 | - |
+| **TOTAL** | **Phase 2 MVP** | **57.5 hours** | **17%** | 4 Mei 2026 | - |
 
 **Estimated Timeline:** 4 weeks (assuming 15 hours/week)
 
