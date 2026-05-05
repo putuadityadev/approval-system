@@ -628,9 +628,40 @@ resources/js/Pages/Vendor/Requests/Detail.jsx
 
 **Build Status:** ✅ Frontend compiled successfully (npm run build)
 
+### Vendor Dashboard Update ✅
+
+**Dashboard Enhancement** (Completed: 5 Mei 2026)
+- Updated `resources/js/Pages/Vendor/Dashboard.jsx` from placeholder to functional
+- Added `dashboard()` method in `RequestController.php`
+- Updated route to use controller method instead of closure
+
+**Dashboard Features:**
+- **Statistics Cards** — 4 cards showing: Pending, Approved, Rejected, Total
+- **Quick Actions** — Buttons: "Buat Surat Baru", "Lihat Semua Surat"
+- **Recent Submissions** — Table showing 5 latest requests with status badges
+- **Empty State** — CTA button when no submissions yet
+- **Company Info** — Card showing vendor company details
+
+**Dashboard Data:**
+- Statistics calculated from database (count by status)
+- Recent requests with eager loading (sikmDetail, sikDetail)
+- Proper error handling & logging
+
+**Files Modified:**
+```
+routes/web.php (updated vendor dashboard route)
+app/Http/Controllers/Vendor/RequestController.php (added dashboard method)
+resources/js/Pages/Vendor/Dashboard.jsx (complete rewrite)
+```
+
 ### Testing Checklist
 
 **Manual Testing Required:**
+- [x] View dashboard with statistics cards
+- [x] View recent submissions table (if any)
+- [x] View empty state (if no submissions)
+- [x] Click "Buat Surat Baru" → redirect to create page
+- [x] Click "Lihat Semua Surat" → redirect to index page
 - [ ] Submit SIKMB Barang Masuk dengan 3 items
 - [ ] Submit SIKMB Barang Keluar dengan 1 item
 - [ ] Submit SIK dengan deskripsi pekerjaan

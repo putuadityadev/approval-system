@@ -49,6 +49,69 @@ class RequestController extends Controller
     }
 
     /**
+     * Vendor Dashboard
+     *
+     * Menampilkan dashboard vendor dengan statistik dan recent submissions.
+     *
+     * Cara kerja:
+     * 1. Ambil data vendor dari user yang login
+     * 2. Hitung statistik request berdasarkan status
+     * 3. Ambil 5 request terakhir
+     * 4. Return Inertia page dengan data statistik dan recent requests
+     *
+     * GET /vendor/dashboard
+     */
+    public function dashboard()
+    {
+        try {
+            $vendor = Auth::user()->vendor;
+            
+            if (!$vendor) {
+                return redirect()->route('login')
+                    ->with('error', 'Data vendor tidak ditemukan. Silakan hubungi admin.');
+            }
+
+            // Hitung statistik berdasarkan status
+            $statistics = [
+                'pending' => \App\Models\Request::byVendor($vendor->id)
+                    ->whereIn('status', ['SUBMITTED', 'PENDING_DEPT', 'PENDING_OPS', 'PENDING_FINANCE', 'PENDING_GM'])
+                    ->count(),
+                'approved' => \App\Models\Request::byVendor($vendor->id)
+                    ->where('status', 'APPROVED')
+                    ->count(),
+                'rejected' => \App\Models\Request::byVendor($vendor->id)
+                    ->where('status', 'REJECTED')
+                    ->count(),
+                'total' => \App\Models\Request::byVendor($vendor->id)->count(),
+            ];
+
+            // Ambil 5 request terakhir
+            $recentRequests = \App\Models\Request::with(['sikmDetail', 'sikDetail'])
+                ->byVendor($vendor->id)
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get();
+
+            return Inertia::render('Vendor/Dashboard', [
+                'auth' => [
+                    'user' => Auth::user()->load('vendor'),
+                ],
+                'statistics' => $statistics,
+                'recentRequests' => $recentRequests,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('VENDOR_DASHBOARD_EXCEPTION', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->route('login')
+                ->with('error', 'Terjadi kesalahan saat memuat dashboard. Silakan coba lagi.');
+        }
+    }
+
+    /**
      * Display list of vendor's requests
      *
      * GET /vendor/requests

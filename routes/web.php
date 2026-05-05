@@ -174,13 +174,8 @@ Route::middleware(['auth', 'active', 'role:super_admin'])->prefix('admin')->name
 Route::middleware(['auth', 'active', 'role:vendor'])->prefix('vendor')->name('vendor.')->group(function () {
     
     // Vendor Dashboard
-    Route::get('/dashboard', function () {
-        return Inertia::render('Vendor/Dashboard', [
-            'auth' => [
-                'user' => auth()->user()->load('vendor'),
-            ],
-        ]);
-    })->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\Vendor\RequestController::class, 'dashboard'])
+        ->name('dashboard');
 
     // Request Management Routes
     Route::get('/requests', [\App\Http\Controllers\Vendor\RequestController::class, 'index'])
