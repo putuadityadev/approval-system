@@ -23,7 +23,7 @@ services:
       - DB_DATABASE=${DB_DATABASE:-mall_approval}
       - DB_USERNAME=${DB_USERNAME:-mall_user}
       - DB_PASSWORD=${DB_PASSWORD:-secret123}
-    command: sh -c "composer install --no-interaction --ignore-platform-reqs && php artisan serve --host=0.0.0.0 --port=8000"
+    command: sh -c "php artisan serve --host=0.0.0.0 --port=8000"
 
   # MySQL Database Container
   db:
@@ -41,6 +41,11 @@ services:
       - "3307:3306"
     networks:
       - laravel_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   # Node.js Container untuk Vite
   node:
@@ -55,7 +60,7 @@ services:
       - "5173:5173"
     networks:
       - laravel_network
-    command: sh -c "npm install && npm run dev -- --host"
+    command: sh -c "npm run dev -- --host"
 
   # MinIO Object Storage
   minio:
