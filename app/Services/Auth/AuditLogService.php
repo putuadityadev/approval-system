@@ -434,6 +434,89 @@ class AuditLogService
             ]);
         }
     }
+
+    /**
+     * logApproveRequest
+     *
+     * Apa yang dilakukan fungsi ini:
+     * Mencatat aktivitas approver approve surat.
+     *
+     * Cara kerjanya:
+     * 1. Simpan log dengan action 'APPROVE_REQUEST'
+     * 2. Simpan details: request_id, from_status, to_status, notes
+     *
+     * @param \App\Models\Request $request — Request yang diapprove
+     * @param User $approver — Approver yang approve
+     * @param string|null $notes — Catatan approver (optional)
+     * @return void
+     */
+    public function logApproveRequest($request, User $approver, ?string $notes = null): void
+    {
+        try {
+            AuditLog::create([
+                'user_id' => $approver->id,
+                'user_email' => $approver->email,
+                'user_role' => $approver->role,
+                'action' => 'APPROVE_REQUEST',
+                'details' => [
+                    'request_id' => $request->id,
+                    'request_type' => $request->request_type,
+                    'document_serial_no' => $request->document_serial_no,
+                    'status' => $request->status,
+                    'notes' => $notes,
+                ],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('AUDIT_LOG_APPROVE_REQUEST_FAILED', [
+                'approver_id' => $approver->id,
+                'request_id' => $request->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * logRejectRequest
+     *
+     * Apa yang dilakukan fungsi ini:
+     * Mencatat aktivitas approver reject surat.
+     *
+     * Cara kerjanya:
+     * 1. Simpan log dengan action 'REJECT_REQUEST'
+     * 2. Simpan details: request_id, reason
+     *
+     * @param \App\Models\Request $request — Request yang direject
+     * @param User $approver — Approver yang reject
+     * @param string $reason — Alasan reject
+     * @return void
+     */
+    public function logRejectRequest($request, User $approver, string $reason): void
+    {
+        try {
+            AuditLog::create([
+                'user_id' => $approver->id,
+                'user_email' => $approver->email,
+                'user_role' => $approver->role,
+                'action' => 'REJECT_REQUEST',
+                'details' => [
+                    'request_id' => $request->id,
+                    'request_type' => $request->request_type,
+                    'document_serial_no' => $request->document_serial_no,
+                    'reason' => $reason,
+                ],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('AUDIT_LOG_REJECT_REQUEST_FAILED', [
+                'approver_id' => $approver->id,
+                'request_id' => $request->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
 }
 
 

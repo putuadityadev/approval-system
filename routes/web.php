@@ -240,12 +240,22 @@ Route::middleware(['auth', 'active', 'role:approver_dept,approver_ops,approver_f
         ]);
     })->name('dashboard');
 
-    // TODO: Tambahkan routes untuk fitur approver lainnya di sini
-    // Contoh:
-    // - View surat yang perlu di-approve
-    // - Approve/reject surat
-    // - View history approval
-    // - Add notes/comments
+    // Request Management Routes
+    Route::get('/requests', [\App\Http\Controllers\Approver\ApprovalController::class, 'index'])
+        ->name('requests.index');
+    
+    Route::get('/requests/{id}', [\App\Http\Controllers\Approver\ApprovalController::class, 'show'])
+        ->name('requests.show');
+    
+    Route::post('/requests/{id}/approve', [\App\Http\Controllers\Approver\ApprovalController::class, 'approve'])
+        ->name('requests.approve');
+    
+    Route::post('/requests/{id}/reject', [\App\Http\Controllers\Approver\ApprovalController::class, 'reject'])
+        ->name('requests.reject');
+    
+    // Approval History
+    Route::get('/history', [\App\Http\Controllers\Approver\ApprovalController::class, 'history'])
+        ->name('history');
 });
 
 /*
