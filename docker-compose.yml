@@ -89,10 +89,6 @@ volumes:
     driver: local
   minio_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./storage/minio
 
 networks:
   laravel_network:
