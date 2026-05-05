@@ -182,12 +182,30 @@ Route::middleware(['auth', 'active', 'role:vendor'])->prefix('vendor')->name('ve
         ]);
     })->name('dashboard');
 
-    // TODO: Tambahkan routes untuk fitur vendor lainnya di sini
-    // Contoh:
-    // - Submit surat ijin (Loading In, Loading Out, Ijin Kerja)
-    // - View status surat yang diajukan
-    // - Upload dokumen pendukung
-    // - View history surat
+    // Request Management Routes
+    Route::get('/requests', [\App\Http\Controllers\Vendor\RequestController::class, 'index'])
+        ->name('requests.index');
+    
+    Route::get('/requests/create', [\App\Http\Controllers\Vendor\RequestController::class, 'create'])
+        ->name('requests.create');
+    
+    // SIKMB Routes
+    Route::get('/requests/create/sikmb', [\App\Http\Controllers\Vendor\RequestController::class, 'createSikmb'])
+        ->name('requests.create.sikmb');
+    Route::post('/requests/sikmb', [\App\Http\Controllers\Vendor\RequestController::class, 'storeSikmb'])
+        ->name('requests.store.sikmb');
+    
+    // SIK Routes
+    Route::get('/requests/create/sik', [\App\Http\Controllers\Vendor\RequestController::class, 'createSik'])
+        ->name('requests.create.sik');
+    Route::post('/requests/sik', [\App\Http\Controllers\Vendor\RequestController::class, 'storeSik'])
+        ->name('requests.store.sik');
+    
+    // Request Detail & Actions
+    Route::get('/requests/{id}', [\App\Http\Controllers\Vendor\RequestController::class, 'show'])
+        ->name('requests.show');
+    Route::post('/requests/{id}/cancel', [\App\Http\Controllers\Vendor\RequestController::class, 'cancel'])
+        ->name('requests.cancel');
 });
 
 /*

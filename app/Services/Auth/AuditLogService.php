@@ -354,4 +354,86 @@ class AuditLogService
             ]);
         }
     }
+
+    /**
+     * logSubmitRequest
+     *
+     * Apa yang dilakukan fungsi ini:
+     * Mencatat aktivitas vendor submit surat (SIK/SIKMB).
+     *
+     * Cara kerjanya:
+     * 1. Simpan log dengan action 'SUBMIT_REQUEST'
+     * 2. Simpan details: request_id, request_type, document_serial_no
+     *
+     * @param \App\Models\Request $request — Request yang disubmit
+     * @param User $user — Vendor yang submit
+     * @return void
+     */
+    public function logSubmitRequest($request, User $user): void
+    {
+        try {
+            AuditLog::create([
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+                'user_role' => $user->role,
+                'action' => 'SUBMIT_REQUEST',
+                'details' => [
+                    'request_id' => $request->id,
+                    'request_type' => $request->request_type,
+                    'document_serial_no' => $request->document_serial_no,
+                ],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('AUDIT_LOG_SUBMIT_REQUEST_FAILED', [
+                'user_id' => $user->id,
+                'request_id' => $request->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * logCancelRequest
+     *
+     * Apa yang dilakukan fungsi ini:
+     * Mencatat aktivitas vendor cancel surat.
+     *
+     * Cara kerjanya:
+     * 1. Simpan log dengan action 'CANCEL_REQUEST'
+     * 2. Simpan details: request_id, reason
+     *
+     * @param \App\Models\Request $request — Request yang dicancel
+     * @param User $user — Vendor yang cancel
+     * @param string $reason — Alasan cancel
+     * @return void
+     */
+    public function logCancelRequest($request, User $user, string $reason): void
+    {
+        try {
+            AuditLog::create([
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+                'user_role' => $user->role,
+                'action' => 'CANCEL_REQUEST',
+                'details' => [
+                    'request_id' => $request->id,
+                    'request_type' => $request->request_type,
+                    'document_serial_no' => $request->document_serial_no,
+                    'reason' => $reason,
+                ],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('AUDIT_LOG_CANCEL_REQUEST_FAILED', [
+                'user_id' => $user->id,
+                'request_id' => $request->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
 }
+
+
