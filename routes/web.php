@@ -181,16 +181,17 @@ Route::middleware(['auth', 'active', 'role:vendor'])->prefix('vendor')->name('ve
     Route::get('/requests', [\App\Http\Controllers\Vendor\RequestController::class, 'index'])
         ->name('requests.index');
     
-    Route::get('/requests/create', [\App\Http\Controllers\Vendor\RequestController::class, 'create'])
-        ->name('requests.create');
+    // New Flow: Upload & OCR first, then create form
+    Route::post('/requests/upload-and-scan', [\App\Http\Controllers\Vendor\RequestController::class, 'uploadAndScan'])
+        ->name('requests.upload-scan');
     
-    // SIKMB Routes
+    // SIKMB Routes (with OCR data)
     Route::get('/requests/create/sikmb', [\App\Http\Controllers\Vendor\RequestController::class, 'createSikmb'])
         ->name('requests.create.sikmb');
     Route::post('/requests/sikmb', [\App\Http\Controllers\Vendor\RequestController::class, 'storeSikmb'])
         ->name('requests.store.sikmb');
     
-    // SIK Routes
+    // SIK Routes (with OCR data)
     Route::get('/requests/create/sik', [\App\Http\Controllers\Vendor\RequestController::class, 'createSik'])
         ->name('requests.create.sik');
     Route::post('/requests/sik', [\App\Http\Controllers\Vendor\RequestController::class, 'storeSik'])
@@ -201,6 +202,12 @@ Route::middleware(['auth', 'active', 'role:vendor'])->prefix('vendor')->name('ve
         ->name('requests.show');
     Route::post('/requests/{id}/cancel', [\App\Http\Controllers\Vendor\RequestController::class, 'cancel'])
         ->name('requests.cancel');
+    
+    // OCR Routes (untuk ekstrak data dari gambar surat)
+    Route::post('/ocr/extract-sikmb', [\App\Http\Controllers\Vendor\OcrController::class, 'extractSikmData'])
+        ->name('ocr.extract.sikmb');
+    Route::post('/ocr/extract-sik', [\App\Http\Controllers\Vendor\OcrController::class, 'extractSikData'])
+        ->name('ocr.extract.sik');
 });
 
 /*

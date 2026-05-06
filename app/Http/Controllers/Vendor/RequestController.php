@@ -164,6 +164,137 @@ class RequestController extends Controller
     }
 
     /**
+     * Upload surat dan scan dengan OCR
+     *
+     * Apa yang dilakukan:
+     * 1. Terima upload file surat (PDF/image) dan jenis surat
+     * 2. Simpan file temporary ke session
+     * 3. Jalankan OCR untuk ekstrak data
+     * 4. Return JSON dengan OCR data dan file path
+     * 5. Frontend redirect ke form page dengan data pre-filled
+     *
+     * Cara kerja:
+     * 1. Validasi file upload dan request_type
+     * 2. Simpan file ke temporary storage
+     * 3. Panggil OcrService untuk ekstrak data
+     * 4. Store file path dan OCR data ke session
+     * 5. Return JSON response dengan redirect URL
+     *
+     * POST /vendor/requests/upload-and-scan
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function uploadAndScan(Request $request)
+    {
+        try {
+            // Validasi input
+            $request->validate([
+                'request_type' => ['required', 'in:LOADING_IN,LOADING_OUT,IJIN_KERJA'],
+                'form_image' => ['required', 'file', 'mimes:jpeg,jpg,png,pdf', 'max:10240'], // 10MB
+            ], [
+                'request_type.required' => 'Jenis surat wajib dipilih.',
+                'request_type.in' => 'Jenis surat tidak valid.',
+                'form_image.required' => 'File surat wajib diupload.',
+                'form_image.mimes' => 'Format file harus JPG, PNG, atau PDF.',
+                'form_image.max' => 'Ukuran file maksimal 10MB.',
+            ]);
+
+            $requestType = $request->input('request_type');
+            $file = $request->file('form_image');
+
+            Log::info('VENDOR_UPLOAD_AND_SCAN_START', [
+                'user_id' => Auth::id(),
+                'request_type' => $requestType,
+                'file_name' => $file->getClientOriginalName(),
+                'file_size' => $file->getSize(),
+            ]);
+
+            // Simpan file ke temporary storage (session)
+            $tempPath = $file->store('temp/forms', 'local');
+            $fullPath = storage_path('app/' . $tempPath);
+
+            // Jalankan OCR (hanya untuk image, skip untuk PDF)
+            $ocrData = [];
+            $fileExtension = $file->getClientOriginalExtension();
+            
+            if (in_array($fileExtension, ['jpg', 'jpeg', 'png'])) {
+                try {
+                    $ocrService = app(\App\Services\OcrService::class);
+                    
+                    if (in_array($requestType, ['LOADING_IN', 'LOADING_OUT'])) {
+                        $ocrData = $ocrService->extractSikmData($file);
+                    } else {
+                        $ocrData = $ocrService->extractSikData($file);
+                    }
+
+                    Log::info('VENDOR_OCR_SUCCESS', [
+                        'user_id' => Auth::id(),
+                        'fields_extracted' => count($ocrData),
+                    ]);
+
+                } catch (\Exception $ocrError) {
+                    Log::warning('VENDOR_OCR_FAILED', [
+                        'user_id' => Auth::id(),
+                        'error' => $ocrError->getMessage(),
+                    ]);
+                    // OCR gagal tidak masalah, user bisa isi manual
+                }
+            }
+
+            // Store data ke session
+            session([
+                'upload_temp_path' => $tempPath,
+                'upload_file_name' => $file->getClientOriginalName(),
+                'upload_request_type' => $requestType,
+                'upload_ocr_data' => $ocrData,
+            ]);
+
+            // Tentukan redirect URL berdasarkan request type
+            $redirectUrl = match($requestType) {
+                'LOADING_IN' => route('vendor.requests.create.sikmb', ['type' => 'LOADING_IN']),
+                'LOADING_OUT' => route('vendor.requests.create.sikmb', ['type' => 'LOADING_OUT']),
+                'IJIN_KERJA' => route('vendor.requests.create.sik'),
+            };
+
+            Log::info('VENDOR_UPLOAD_AND_SCAN_SUCCESS', [
+                'user_id' => Auth::id(),
+                'redirect_url' => $redirectUrl,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'File berhasil diupload dan di-scan.',
+                'data' => [
+                    'ocr_data' => $ocrData,
+                    'file_name' => $file->getClientOriginalName(),
+                    'redirect_url' => $redirectUrl,
+                ],
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal.',
+                'errors' => $e->errors(),
+            ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('VENDOR_UPLOAD_AND_SCAN_EXCEPTION', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal upload dan scan file. Silakan coba lagi.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Show SIKMB form
      *
      * GET /vendor/requests/create/sikmb
@@ -179,9 +310,26 @@ class RequestController extends Controller
 
         $requestType = $request->query('type', 'LOADING_IN');
 
+        // Ambil data dari session (jika ada dari upload & scan)
+        $ocrData = session('upload_ocr_data', []);
+        $uploadedFileName = session('upload_file_name');
+        $tempPath = session('upload_temp_path');
+
+        // Generate preview URL jika ada file
+        $previewUrl = null;
+        if ($tempPath && file_exists(storage_path('app/' . $tempPath))) {
+            // Convert to base64 untuk preview
+            $fileContent = file_get_contents(storage_path('app/' . $tempPath));
+            $mimeType = mime_content_type(storage_path('app/' . $tempPath));
+            $previewUrl = 'data:' . $mimeType . ';base64,' . base64_encode($fileContent);
+        }
+
         return Inertia::render('Vendor/Requests/CreateSikmb', [
             'vendor' => $vendor,
             'requestType' => $requestType,
+            'ocrData' => $ocrData,
+            'uploadedFileName' => $uploadedFileName,
+            'previewUrl' => $previewUrl,
         ]);
     }
 
@@ -237,8 +385,24 @@ class RequestController extends Controller
                 ->with('error', 'Data vendor tidak ditemukan. Silakan hubungi admin.');
         }
 
+        // Ambil data dari session (jika ada dari upload & scan)
+        $ocrData = session('upload_ocr_data', []);
+        $uploadedFileName = session('upload_file_name');
+        $tempPath = session('upload_temp_path');
+
+        // Generate preview URL jika ada file
+        $previewUrl = null;
+        if ($tempPath && file_exists(storage_path('app/' . $tempPath))) {
+            $fileContent = file_get_contents(storage_path('app/' . $tempPath));
+            $mimeType = mime_content_type(storage_path('app/' . $tempPath));
+            $previewUrl = 'data:' . $mimeType . ';base64,' . base64_encode($fileContent);
+        }
+
         return Inertia::render('Vendor/Requests/CreateSik', [
             'vendor' => $vendor,
+            'ocrData' => $ocrData,
+            'uploadedFileName' => $uploadedFileName,
+            'previewUrl' => $previewUrl,
         ]);
     }
 

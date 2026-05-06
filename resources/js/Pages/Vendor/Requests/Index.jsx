@@ -1,4 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
+import { useState } from 'react';
+import UploadScanModal from '@/Components/shared/UploadScanModal';
 
 /**
  * Index (List Requests)
@@ -8,18 +10,22 @@ import { Head, Link } from '@inertiajs/react';
  * - Pagination untuk navigasi antar halaman
  * - Badge status untuk setiap surat
  * - Link ke detail page
+ * - Modal untuk upload & scan surat baru
  *
  * Cara kerjanya:
  * 1. Menerima data requests (paginated) dari backend
  * 2. Menampilkan table dengan kolom: No Dokumen, Tipe, Status, Tanggal, Aksi
- * 3. User bisa klik row untuk lihat detail
- * 4. Pagination di bawah table
+ * 3. User bisa klik "Buat Request Baru" untuk buka modal
+ * 4. Modal: pilih jenis surat → upload file → scan OCR → redirect ke form
+ * 5. User bisa klik row untuk lihat detail
+ * 6. Pagination di bawah table
  *
  * Props:
  * - requests: objek paginated { data: [], current_page, last_page, per_page, total, links }
  * - vendor: objek vendor { id, company_name, pic_name, pic_phone, address }
  */
 export default function Index({ requests, vendor }) {
+    const [isModalOpen, setIsModalOpen] = useState(false);
     /**
      * getStatusBadgeClass
      *
@@ -116,13 +122,19 @@ export default function Index({ requests, vendor }) {
                                 Total: {requests.total} surat
                             </p>
                         </div>
-                        <Link
-                            href="/vendor/requests/create"
-                            className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium"
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium transition-colors"
                         >
-                            + Buat Surat Baru
-                        </Link>
+                            + Buat Request Baru
+                        </button>
                     </div>
+
+                    {/* Upload & Scan Modal */}
+                    <UploadScanModal
+                        isOpen={isModalOpen}
+                        onClose={() => setIsModalOpen(false)}
+                    />
 
                     {/* Table */}
                     <div className="bg-white rounded-lg shadow-sm overflow-hidden">
