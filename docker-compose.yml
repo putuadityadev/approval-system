@@ -11,6 +11,7 @@ services:
     working_dir: /var/www/html
     volumes:
       - ./:/var/www/html
+      # Di WSL2, tidak perlu named volumes karena filesystem sudah native Linux (fast!)
     ports:
       - "8000:8000"
     networks:
@@ -23,7 +24,7 @@ services:
       - DB_DATABASE=${DB_DATABASE:-mall_approval}
       - DB_USERNAME=${DB_USERNAME:-mall_user}
       - DB_PASSWORD=${DB_PASSWORD:-secret123}
-    command: sh -c "php artisan serve --host=0.0.0.0 --port=8000"
+    command: sh -c "composer install --no-interaction && php artisan serve --host=0.0.0.0 --port=8000"
 
   # MySQL Database Container
   db:
@@ -55,12 +56,11 @@ services:
     tty: true
     volumes:
       - ./:/var/www/html
-      - /var/www/html/node_modules
     ports:
       - "5173:5173"
     networks:
       - laravel_network
-    command: sh -c "npm run dev -- --host"
+    command: sh -c "npm install && npm run dev -- --host"
 
   # MinIO Object Storage
   minio:
