@@ -34,7 +34,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Request extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'vendor_id',
@@ -119,11 +119,12 @@ class Request extends Model
 
     /**
      * Helper: Check if status is PENDING_*
+     *
+     * Status yang valid: PENDING_OPS, PENDING_FINANCE, PENDING_GM
      */
     public function isPending(): bool
     {
         return in_array($this->status, [
-            'PENDING_DEPT',
             'PENDING_OPS',
             'PENDING_FINANCE',
             'PENDING_GM',
@@ -141,12 +142,13 @@ class Request extends Model
     /**
      * Helper: Check if vendor can cancel
      * Vendor hanya bisa cancel jika status SUBMITTED atau PENDING_*
+     *
+     * Status yang bisa di-cancel: SUBMITTED, PENDING_OPS, PENDING_FINANCE, PENDING_GM
      */
     public function canCancel(): bool
     {
         return in_array($this->status, [
             'SUBMITTED',
-            'PENDING_DEPT',
             'PENDING_OPS',
             'PENDING_FINANCE',
             'PENDING_GM',
@@ -155,13 +157,15 @@ class Request extends Model
 
     /**
      * Helper: Get status label untuk display
+     *
+     * Status flow yang benar:
+     * SUBMITTED → PENDING_OPS → PENDING_FINANCE → PENDING_GM → APPROVED
      */
     public function getStatusLabel(): string
     {
         $labels = [
             'DRAFT' => 'Draft',
-            'SUBMITTED' => 'Diajukan',
-            'PENDING_DEPT' => 'Menunggu Approval Dept',
+            'SUBMITTED' => 'Menunggu Approval Dept',
             'PENDING_OPS' => 'Menunggu Approval Ops',
             'PENDING_FINANCE' => 'Menunggu Approval Finance',
             'PENDING_GM' => 'Menunggu Approval GM',

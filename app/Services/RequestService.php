@@ -312,11 +312,11 @@ class RequestService
     /**
      * Get vendor's own requests dengan pagination
      *
-     * @param int $vendorId
+     * @param string $vendorId — UUID vendor
      * @param int $perPage
      * @return \Illuminate\Pagination\LengthAwarePaginator
      */
-    public function getVendorRequests(int $vendorId, int $perPage = 15)
+    public function getVendorRequests(string $vendorId, int $perPage = 15)
     {
         return Request::with(['sikmDetail', 'sikDetail', 'approvalLogs'])
             ->byVendor($vendorId)
@@ -327,11 +327,11 @@ class RequestService
     /**
      * Get request detail by ID
      *
-     * @param int $requestId
+     * @param string $requestId — UUID request
      * @return Request
      * @throws \Exception — Jika request tidak ditemukan
      */
-    public function getRequestDetail(int $requestId): Request
+    public function getRequestDetail(string $requestId): Request
     {
         $request = Request::with([
             'vendor.user',
@@ -360,12 +360,12 @@ class RequestService
      * 3. Create approval_log (CANCELLED)
      * 4. Log audit trail
      *
-     * @param int $requestId
+     * @param string $requestId — UUID request
      * @param string $reason
      * @return Request
      * @throws \Exception — Jika cancel gagal
      */
-    public function cancelRequest(int $requestId, string $reason): Request
+    public function cancelRequest(string $requestId, string $reason): Request
     {
         Log::info('REQUEST_CANCEL_START', [
             'request_id' => $requestId,

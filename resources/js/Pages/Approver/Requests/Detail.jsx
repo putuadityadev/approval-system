@@ -22,7 +22,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Button from '@/Components/ui/Button';
 import ValidationErrors from '@/Components/shared/ValidationErrors';
 
-function ApproverRequestDetail({ auth, request, roleLabel, canApprove }) {
+function ApproverRequestDetail({ auth, request, roleLabel, canApprove, formImageUrl }) {
     const [showApproveModal, setShowApproveModal] = useState(false);
     const [showRejectModal, setShowRejectModal] = useState(false);
 
@@ -393,11 +393,11 @@ function ApproverRequestDetail({ auth, request, roleLabel, canApprove }) {
                                 <div className="p-6">
                                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Preview Surat</h3>
                                     
-                                    {request.original_form_image ? (
+                                    {formImageUrl ? (
                                         <div className="space-y-4">
                                             <div className="border border-gray-200 rounded-lg overflow-hidden">
                                                 <img
-                                                    src={request.original_form_image}
+                                                    src={formImageUrl}
                                                     alt="Preview Surat"
                                                     className="w-full h-auto"
                                                     onError={(e) => {
@@ -414,7 +414,7 @@ function ApproverRequestDetail({ auth, request, roleLabel, canApprove }) {
                                             </div>
                                             
                                             <a
-                                                href={request.original_form_image}
+                                                href={formImageUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors"

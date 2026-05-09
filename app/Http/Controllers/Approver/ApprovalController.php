@@ -41,13 +41,16 @@ class ApprovalController extends Controller
 {
     protected $approvalService;
     protected $requestService;
+    protected $storageService;
 
     public function __construct(
         ApprovalService $approvalService,
-        RequestService $requestService
+        RequestService $requestService,
+        \App\Services\StorageService $storageService
     ) {
         $this->approvalService = $approvalService;
         $this->requestService = $requestService;
+        $this->storageService = $storageService;
     }
 
     /**
@@ -113,10 +116,17 @@ class ApprovalController extends Controller
             // Check apakah approver bisa approve request ini
             $canApprove = $this->canApproveRequest($request, $approver);
 
+            // Generate presigned URL untuk preview surat
+            $formImageUrl = null;
+            if ($request->original_form_image) {
+                $formImageUrl = $this->storageService->getFileUrl($request->original_form_image);
+            }
+
             return Inertia::render('Approver/Requests/Detail', [
                 'request' => $request,
                 'roleLabel' => $roleLabel,
                 'canApprove' => $canApprove,
+                'formImageUrl' => $formImageUrl,
             ]);
 
         } catch (\Exception $e) {
@@ -287,6 +297,12 @@ class ApprovalController extends Controller
     /**
      * Check apakah approver bisa approve request ini
      *
+     * Mapping yang benar (sesuai dengan status flow baru):
+     * - SUBMITTED → approver_dept
+     * - PENDING_OPS → approver_ops
+     * - PENDING_FINANCE → approver_finance
+     * - PENDING_GM → approver_gm
+     *
      * @param \App\Models\Request $request
      * @param \App\Models\User $approver
      * @return bool
@@ -295,9 +311,9 @@ class ApprovalController extends Controller
     {
         $validRoleMap = [
             'SUBMITTED' => 'approver_dept',
-            'PENDING_DEPT' => 'approver_ops',
-            'PENDING_OPS' => 'approver_finance',
-            'PENDING_FINANCE' => 'approver_gm',
+            'PENDING_OPS' => 'approver_ops',
+            'PENDING_FINANCE' => 'approver_finance',
+            'PENDING_GM' => 'approver_gm',
         ];
 
         $expectedRole = $validRoleMap[$request->status] ?? null;

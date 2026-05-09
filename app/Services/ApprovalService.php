@@ -55,12 +55,12 @@ class ApprovalService
      * 5. Log audit trail
      * 6. Jika sudah APPROVED (GM approve), trigger QR code generation
      *
-     * @param int $requestId
+     * @param string $requestId — UUID request
      * @param string $notes — Catatan approver (optional)
      * @return Request
      * @throws \Exception — Jika approval gagal
      */
-    public function approveRequest(int $requestId, ?string $notes = null): Request
+    public function approveRequest(string $requestId, ?string $notes = null): Request
     {
         Log::info('APPROVAL_APPROVE_START', [
             'request_id' => $requestId,
@@ -145,12 +145,12 @@ class ApprovalService
      * 3. Create approval_log (REJECTED)
      * 4. Log audit trail
      *
-     * @param int $requestId
+     * @param string $requestId — UUID request
      * @param string $reason — Alasan reject (required)
      * @return Request
      * @throws \Exception — Jika reject gagal
      */
-    public function rejectRequest(int $requestId, string $reason): Request
+    public function rejectRequest(string $requestId, string $reason): Request
     {
         Log::info('APPROVAL_REJECT_START', [
             'request_id' => $requestId,
@@ -220,6 +220,12 @@ class ApprovalService
      * 2. Query requests dengan status tersebut
      * 3. Return dengan pagination
      *
+     * Status mapping yang benar:
+     * - approver_dept: approve request dengan status SUBMITTED
+     * - approver_ops: approve request dengan status PENDING_OPS
+     * - approver_finance: approve request dengan status PENDING_FINANCE
+     * - approver_gm: approve request dengan status PENDING_GM
+     *
      * @param string $approverRole — Role approver (approver_dept, approver_ops, dll)
      * @param int $perPage — Jumlah per halaman
      * @return \Illuminate\Pagination\LengthAwarePaginator
@@ -229,9 +235,9 @@ class ApprovalService
         // Mapping role ke status yang harus di-approve
         $statusMap = [
             'approver_dept' => 'SUBMITTED',
-            'approver_ops' => 'PENDING_DEPT',
-            'approver_finance' => 'PENDING_OPS',
-            'approver_gm' => 'PENDING_FINANCE',
+            'approver_ops' => 'PENDING_OPS',
+            'approver_finance' => 'PENDING_FINANCE',
+            'approver_gm' => 'PENDING_GM',
         ];
 
         $status = $statusMap[$approverRole] ?? null;
@@ -249,11 +255,11 @@ class ApprovalService
     /**
      * Get approval history (semua request yang sudah di-approve/reject oleh approver)
      *
-     * @param int $approverId — ID approver
+     * @param string $approverId — UUID approver
      * @param int $perPage — Jumlah per halaman
      * @return \Illuminate\Pagination\LengthAwarePaginator
      */
-    public function getApprovalHistory(int $approverId, int $perPage = 15)
+    public function getApprovalHistory(string $approverId, int $perPage = 15)
     {
         return ApprovalLog::with(['request.vendor', 'request.sikmDetail', 'request.sikDetail'])
             ->where('approver_id', $approverId)
@@ -274,19 +280,19 @@ class ApprovalService
      * 3. Hitung rejected count dari approval_logs
      * 4. Total = approved + rejected
      *
-     * @param int $approverId — ID approver
+     * @param string $approverId — UUID approver
      * @param string $approverRole — Role approver
      * @return array — ['pending' => int, 'approved' => int, 'rejected' => int, 'total' => int]
      */
-    public function getApproverStatistics(int $approverId, string $approverRole): array
+    public function getApproverStatistics(string $approverId, string $approverRole): array
     {
         try {
             // Mapping role ke status untuk pending count
             $statusMap = [
                 'approver_dept' => 'SUBMITTED',
-                'approver_ops' => 'PENDING_DEPT',
-                'approver_finance' => 'PENDING_OPS',
-                'approver_gm' => 'PENDING_FINANCE',
+                'approver_ops' => 'PENDING_OPS',
+                'approver_finance' => 'PENDING_FINANCE',
+                'approver_gm' => 'PENDING_GM',
             ];
             
             $pendingStatus = $statusMap[$approverRole] ?? null;
@@ -333,6 +339,12 @@ class ApprovalService
     /**
      * Validasi apakah approver role sesuai dengan status request
      *
+     * Mapping yang benar:
+     * - SUBMITTED → approver_dept
+     * - PENDING_OPS → approver_ops
+     * - PENDING_FINANCE → approver_finance
+     * - PENDING_GM → approver_gm
+     *
      * @param Request $request
      * @param \App\Models\User $approver
      * @throws \Exception — Jika role tidak sesuai
@@ -341,9 +353,9 @@ class ApprovalService
     {
         $validRoleMap = [
             'SUBMITTED' => 'approver_dept',
-            'PENDING_DEPT' => 'approver_ops',
-            'PENDING_OPS' => 'approver_finance',
-            'PENDING_FINANCE' => 'approver_gm',
+            'PENDING_OPS' => 'approver_ops',
+            'PENDING_FINANCE' => 'approver_finance',
+            'PENDING_GM' => 'approver_gm',
         ];
 
         $expectedRole = $validRoleMap[$request->status] ?? null;
@@ -363,6 +375,9 @@ class ApprovalService
     /**
      * Tentukan next status berdasarkan current status
      *
+     * Status Flow yang benar:
+     * SUBMITTED → (Dept approve) → PENDING_OPS → (Ops approve) → PENDING_FINANCE → (Finance approve) → PENDING_GM → (GM approve) → APPROVED
+     *
      * @param string $currentStatus
      * @return string
      * @throws \Exception — Jika status tidak valid
@@ -370,11 +385,10 @@ class ApprovalService
     protected function getNextStatus(string $currentStatus): string
     {
         $statusFlow = [
-            'SUBMITTED' => 'PENDING_DEPT',
-            'PENDING_DEPT' => 'PENDING_OPS',
-            'PENDING_OPS' => 'PENDING_FINANCE',
-            'PENDING_FINANCE' => 'PENDING_GM',
-            'PENDING_GM' => 'APPROVED',
+            'SUBMITTED' => 'PENDING_OPS',           // Dept approve → Ops
+            'PENDING_OPS' => 'PENDING_FINANCE',     // Ops approve → Finance
+            'PENDING_FINANCE' => 'PENDING_GM',      // Finance approve → GM
+            'PENDING_GM' => 'APPROVED',             // GM approve → Final
         ];
 
         $nextStatus = $statusFlow[$currentStatus] ?? null;

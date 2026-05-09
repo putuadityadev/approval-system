@@ -68,6 +68,7 @@ return [
             'bucket' => env('MINIO_BUCKET'),
             'url' => env('MINIO_ENDPOINT'),
             'endpoint' => env('MINIO_ENDPOINT'),
+            'public_endpoint' => env('MINIO_PUBLIC_ENDPOINT', env('MINIO_ENDPOINT')),
             'use_path_style_endpoint' => env('MINIO_USE_PATH_STYLE_ENDPOINT', true),
             'throw' => false,
             'report' => false,

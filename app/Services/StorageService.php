@@ -40,11 +40,11 @@ class StorageService
      * 4. Return path file yang tersimpan
      *
      * @param UploadedFile $file — File yang diupload
-     * @param int $requestId — ID request untuk folder structure
+     * @param string $requestId — ID request (UUID) untuk folder structure
      * @return string — Path file di MinIO
      * @throws \Exception — Jika upload gagal
      */
-    public function uploadRequestForm(UploadedFile $file, int $requestId): string
+    public function uploadRequestForm(UploadedFile $file, string $requestId): string
     {
         Log::info('STORAGE_UPLOAD_REQUEST_FORM_START', [
             'request_id' => $requestId,
@@ -111,11 +111,11 @@ class StorageService
      * 5. Return array paths file yang tersimpan
      *
      * @param array $files — Array of UploadedFile
-     * @param int $requestId — ID request untuk folder structure
+     * @param string $requestId — ID request (UUID) untuk folder structure
      * @return array — Array of paths file di MinIO
      * @throws \Exception — Jika upload gagal
      */
-    public function uploadEvidencePhotos(array $files, int $requestId): array
+    public function uploadEvidencePhotos(array $files, string $requestId): array
     {
         Log::info('STORAGE_UPLOAD_EVIDENCE_START', [
             'request_id' => $requestId,
@@ -190,11 +190,11 @@ class StorageService
      * 3. Return path file yang tersimpan
      *
      * @param string $qrCodeContent — Binary content QR code
-     * @param int $requestId — ID request
+     * @param string $requestId — ID request (UUID)
      * @return string — Path file di MinIO
      * @throws \Exception — Jika upload gagal
      */
-    public function uploadQrCode(string $qrCodeContent, int $requestId): string
+    public function uploadQrCode(string $qrCodeContent, string $requestId): string
     {
         Log::info('STORAGE_UPLOAD_QR_CODE_START', [
             'request_id' => $requestId,
@@ -438,6 +438,83 @@ class StorageService
             ]);
 
             throw new \Exception('Gagal get file size. ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get temporary URL untuk akses file di MinIO
+     *
+     * Apa yang dilakukan:
+     * Generate presigned URL yang valid selama 1 jam untuk akses file.
+     *
+     * Cara kerja:
+     * 1. Check apakah file exists di MinIO
+     * 2. Temporarily override endpoint config dengan public endpoint
+     * 3. Generate presigned URL dengan public endpoint (signature akan match)
+     * 4. Restore original endpoint config
+     * 5. Return URL yang bisa diakses langsung dari browser
+     *
+     * @param string $path — Path file di MinIO (e.g., requests/{uuid}/form.jpg)
+     * @return string|null — URL untuk akses file, atau null jika file tidak ada
+     */
+    public function getFileUrl(string $path): ?string
+    {
+        try {
+            // Check apakah file exists
+            if (!Storage::disk('minio')->exists($path)) {
+                Log::warning('STORAGE_GET_URL_FILE_NOT_FOUND', [
+                    'path' => $path,
+                ]);
+                return null;
+            }
+
+            // Get endpoints
+            $internalEndpoint = config('filesystems.disks.minio.endpoint');
+            $publicEndpoint = config('filesystems.disks.minio.public_endpoint', $internalEndpoint);
+            
+            // Jika public endpoint berbeda, kita perlu create temporary disk config
+            if ($internalEndpoint !== $publicEndpoint) {
+                // Create temporary disk config dengan public endpoint
+                config([
+                    'filesystems.disks.minio_public' => array_merge(
+                        config('filesystems.disks.minio'),
+                        [
+                            'endpoint' => $publicEndpoint,
+                            'url' => $publicEndpoint,
+                        ]
+                    )
+                ]);
+
+                // Generate presigned URL dengan public endpoint
+                $url = Storage::disk('minio_public')->temporaryUrl(
+                    $path,
+                    now()->addHour()
+                );
+            } else {
+                // Jika sama, pakai disk biasa
+                $url = Storage::disk('minio')->temporaryUrl(
+                    $path,
+                    now()->addHour()
+                );
+            }
+
+            Log::info('STORAGE_GET_URL_SUCCESS', [
+                'path' => $path,
+                'url_generated' => true,
+                'internal_endpoint' => $internalEndpoint,
+                'public_endpoint' => $publicEndpoint,
+                'final_url' => substr($url, 0, 100) . '...', // Truncate untuk keamanan
+            ]);
+
+            return $url;
+
+        } catch (\Exception $e) {
+            Log::error('STORAGE_GET_URL_FAILED', [
+                'path' => $path,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
         }
     }
 }
