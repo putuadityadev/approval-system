@@ -16,10 +16,13 @@
  */
 
 import { Link } from '@inertiajs/react';
+import { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Button from '@/Components/ui/Button';
+import UploadScanModal from '@/Components/shared/UploadScanModal';
 
 function VendorDashboard({ auth, statistics, recentRequests }) {
+    const [isModalOpen, setIsModalOpen] = useState(false);
     /**
      * getStatusBadge
      *
@@ -186,14 +189,16 @@ function VendorDashboard({ auth, statistics, recentRequests }) {
                         <div className="p-6">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
                             <div className="flex flex-wrap gap-4">
-                                <Link href={route('vendor.requests.create')}>
-                                    <Button variant="primary" className="flex items-center gap-2">
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                        </svg>
-                                        Buat Surat Baru
-                                    </Button>
-                                </Link>
+                                <Button 
+                                    variant="primary" 
+                                    className="flex items-center gap-2"
+                                    onClick={() => setIsModalOpen(true)}
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    Buat Surat Baru
+                                </Button>
                                 <Link href={route('vendor.requests.index')}>
                                     <Button variant="secondary" className="flex items-center gap-2">
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,14 +234,16 @@ function VendorDashboard({ auth, statistics, recentRequests }) {
                                         Mulai dengan membuat surat pengajuan pertama Anda.
                                     </p>
                                     <div className="mt-6">
-                                        <Link href={route('vendor.requests.create')}>
-                                            <Button variant="primary" className="flex items-center gap-2 mx-auto">
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                                </svg>
-                                                Buat Surat Baru
-                                            </Button>
-                                        </Link>
+                                        <Button 
+                                            variant="primary" 
+                                            className="flex items-center gap-2 mx-auto"
+                                            onClick={() => setIsModalOpen(true)}
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                            </svg>
+                                            Buat Surat Baru
+                                        </Button>
                                     </div>
                                 </div>
                             ) : (
@@ -321,6 +328,12 @@ function VendorDashboard({ auth, statistics, recentRequests }) {
                             </div>
                         </div>
                     )}
+
+                    {/* Upload & Scan Modal */}
+                    <UploadScanModal 
+                        isOpen={isModalOpen}
+                        onClose={() => setIsModalOpen(false)}
+                    />
                 </div>
             </div>
         </AuthenticatedLayout>

@@ -41,7 +41,7 @@ class SubmitSikmRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'vendor_id' => ['required', 'exists:vendors,id'],
+            // vendor_id akan di-set di controller, tidak perlu validasi dari request
             'request_type' => ['required', 'in:LOADING_IN,LOADING_OUT'],
             'sop_form_code' => ['nullable', 'string', 'max:50'],
             'document_serial_no' => ['required', 'string', 'max:50', 'unique:requests,document_serial_no'],
@@ -68,6 +68,25 @@ class SubmitSikmRequest extends FormRequest
     }
 
     /**
+     * Handle a failed validation attempt.
+     *
+     * @param  \Illuminate\Contracts\Validation\Validator  $validator
+     * @return void
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
+    {
+        \Illuminate\Support\Facades\Log::error('VENDOR_SUBMIT_SIKMB_VALIDATION_FAILED', [
+            'user_id' => auth()->id(),
+            'errors' => $validator->errors()->toArray(),
+            'input' => $this->except(['original_form_image']),
+        ]);
+
+        parent::failedValidation($validator);
+    }
+
+    /**
      * Get custom messages for validator errors.
      *
      * @return array<string, string>
@@ -75,8 +94,6 @@ class SubmitSikmRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'vendor_id.required' => 'Vendor ID wajib diisi.',
-            'vendor_id.exists' => 'Vendor tidak ditemukan.',
             'request_type.required' => 'Tipe surat wajib dipilih.',
             'request_type.in' => 'Tipe surat harus LOADING_IN atau LOADING_OUT.',
             'document_serial_no.required' => 'Nomor seri dokumen wajib diisi.',

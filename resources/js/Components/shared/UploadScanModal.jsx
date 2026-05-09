@@ -67,7 +67,7 @@ export default function UploadScanModal({ isOpen, onClose }) {
     /**
      * Handle upload and scan
      */
-    const handleUploadAndScan = async () => {
+    const handleUploadAndScan = () => {
         if (!selectedFile) {
             setError('Pilih file terlebih dahulu.');
             return;
@@ -81,35 +81,38 @@ export default function UploadScanModal({ isOpen, onClose }) {
         setIsScanning(true);
         setError(null);
 
-        try {
-            // Buat FormData
-            const formData = new FormData();
-            formData.append('form_image', selectedFile);
-            formData.append('request_type', requestType);
-
-            // Upload dan scan
-            const response = await fetch(route('vendor.requests.upload-scan'), {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        // Gunakan Inertia router untuk handle CSRF otomatis
+        router.post(
+            route('vendor.requests.upload-scan'),
+            {
+                form_image: selectedFile,
+                request_type: requestType,
+            },
+            {
+                forceFormData: true, // Force multipart/form-data untuk file upload
+                onError: (errors) => {
+                    console.error('Upload and scan error:', errors);
+                    
+                    // Handle validation errors
+                    if (errors.form_image) {
+                        setError(errors.form_image);
+                    } else if (errors.request_type) {
+                        setError(errors.request_type);
+                    } else {
+                        setError('Gagal upload dan scan. Silakan coba lagi.');
+                    }
+                    
+                    setIsScanning(false);
                 },
-            });
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.message || 'Gagal upload dan scan file.');
+                onSuccess: () => {
+                    // Inertia akan handle redirect otomatis dari controller
+                    // Modal akan auto-close karena page berubah
+                },
+                onFinish: () => {
+                    // Callback ini dipanggil setelah request selesai
+                },
             }
-
-            // Redirect ke form page
-            window.location.href = result.data.redirect_url;
-
-        } catch (err) {
-            console.error('Upload and scan error:', err);
-            setError(err.message || 'Gagal upload dan scan. Silakan coba lagi.');
-            setIsScanning(false);
-        }
+        );
     };
 
     /**

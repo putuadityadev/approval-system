@@ -9,6 +9,7 @@ use App\Services\RequestService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 /**
@@ -170,20 +171,19 @@ class RequestController extends Controller
      * 1. Terima upload file surat (PDF/image) dan jenis surat
      * 2. Simpan file temporary ke session
      * 3. Jalankan OCR untuk ekstrak data
-     * 4. Return JSON dengan OCR data dan file path
-     * 5. Frontend redirect ke form page dengan data pre-filled
+     * 4. Redirect ke form page dengan data pre-filled
      *
      * Cara kerja:
      * 1. Validasi file upload dan request_type
      * 2. Simpan file ke temporary storage
      * 3. Panggil OcrService untuk ekstrak data
      * 4. Store file path dan OCR data ke session
-     * 5. Return JSON response dengan redirect URL
+     * 5. Redirect ke form page sesuai request type
      *
      * POST /vendor/requests/upload-and-scan
      *
      * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function uploadAndScan(Request $request)
     {
@@ -210,9 +210,16 @@ class RequestController extends Controller
                 'file_size' => $file->getSize(),
             ]);
 
-            // Simpan file ke temporary storage (session)
-            $tempPath = $file->store('temp/forms', 'local');
-            $fullPath = storage_path('app/' . $tempPath);
+            // Generate unique filename untuk user ini
+            $userId = Auth::id();
+            $timestamp = time();
+            $extension = $file->getClientOriginalExtension();
+            $uniqueFileName = "user_{$userId}_{$timestamp}.{$extension}";
+            
+            // Simpan file menggunakan Storage facade
+            $fileContent = file_get_contents($file->getRealPath());
+            $tempPath = 'temp/forms/' . $uniqueFileName;
+            Storage::disk('local')->put($tempPath, $fileContent);
 
             // Jalankan OCR (hanya untuk image, skip untuk PDF)
             $ocrData = [];
@@ -222,10 +229,28 @@ class RequestController extends Controller
                 try {
                     $ocrService = app(\App\Services\OcrService::class);
                     
+                    // Gunakan Storage path untuk OCR
+                    $ocrFilePath = Storage::disk('local')->path($tempPath);
+                    
+                    // Pass file path ke OCR service
                     if (in_array($requestType, ['LOADING_IN', 'LOADING_OUT'])) {
-                        $ocrData = $ocrService->extractSikmData($file);
+                        $savedFile = new \Illuminate\Http\UploadedFile(
+                            $ocrFilePath,
+                            $file->getClientOriginalName(),
+                            $file->getClientMimeType(),
+                            null,
+                            true
+                        );
+                        $ocrData = $ocrService->extractSikmData($savedFile);
                     } else {
-                        $ocrData = $ocrService->extractSikData($file);
+                        $savedFile = new \Illuminate\Http\UploadedFile(
+                            $ocrFilePath,
+                            $file->getClientOriginalName(),
+                            $file->getClientMimeType(),
+                            null,
+                            true
+                        );
+                        $ocrData = $ocrService->extractSikData($savedFile);
                     }
 
                     Log::info('VENDOR_OCR_SUCCESS', [
@@ -242,7 +267,8 @@ class RequestController extends Controller
                 }
             }
 
-            // Store data ke session
+            // Store data ke session (TIDAK pakai flash agar bertahan sampai submit)
+            // Session akan di-clear saat submit berhasil
             session([
                 'upload_temp_path' => $tempPath,
                 'upload_file_name' => $file->getClientOriginalName(),
@@ -262,22 +288,13 @@ class RequestController extends Controller
                 'redirect_url' => $redirectUrl,
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'File berhasil diupload dan di-scan.',
-                'data' => [
-                    'ocr_data' => $ocrData,
-                    'file_name' => $file->getClientOriginalName(),
-                    'redirect_url' => $redirectUrl,
-                ],
-            ]);
+            // Redirect ke form page (Inertia akan handle otomatis)
+            return redirect($redirectUrl)
+                ->with('success', 'File berhasil diupload dan di-scan. Silakan lengkapi form di bawah.');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal.',
-                'errors' => $e->errors(),
-            ], 422);
+            // Validation error - return back dengan error messages
+            return back()->withErrors($e->errors())->withInput();
 
         } catch (\Exception $e) {
             Log::error('VENDOR_UPLOAD_AND_SCAN_EXCEPTION', [
@@ -286,11 +303,9 @@ class RequestController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal upload dan scan file. Silakan coba lagi.',
-                'error' => $e->getMessage(),
-            ], 500);
+            return back()
+                ->withErrors(['form_image' => 'Gagal upload dan scan file. Silakan coba lagi.'])
+                ->withInput();
         }
     }
 
@@ -314,14 +329,25 @@ class RequestController extends Controller
         $ocrData = session('upload_ocr_data', []);
         $uploadedFileName = session('upload_file_name');
         $tempPath = session('upload_temp_path');
+        
+        // Gunakan Storage::path() untuk mendapatkan path yang benar
+        $fullPath = $tempPath ? Storage::disk('local')->path($tempPath) : null;
+        $fileExists = $fullPath && file_exists($fullPath);
 
         // Generate preview URL jika ada file
         $previewUrl = null;
-        if ($tempPath && file_exists(storage_path('app/' . $tempPath))) {
-            // Convert to base64 untuk preview
-            $fileContent = file_get_contents(storage_path('app/' . $tempPath));
-            $mimeType = mime_content_type(storage_path('app/' . $tempPath));
-            $previewUrl = 'data:' . $mimeType . ';base64,' . base64_encode($fileContent);
+        if ($fileExists) {
+            try {
+                // Convert to base64 untuk preview
+                $fileContent = file_get_contents($fullPath);
+                $mimeType = mime_content_type($fullPath);
+                $previewUrl = 'data:' . $mimeType . ';base64,' . base64_encode($fileContent);
+            } catch (\Exception $e) {
+                Log::error('VENDOR_CREATE_SIKMB_PREVIEW_ERROR', [
+                    'temp_path' => $tempPath,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return Inertia::render('Vendor/Requests/CreateSikmb', [
@@ -341,9 +367,17 @@ class RequestController extends Controller
     public function storeSikmb(SubmitSikmRequest $request)
     {
         try {
+            Log::info('VENDOR_STORE_SIKMB_START', [
+                'user_id' => Auth::id(),
+                'request_data' => $request->all(),
+            ]);
+
             $vendor = Auth::user()->vendor;
             
             if (!$vendor) {
+                Log::error('VENDOR_STORE_SIKMB_NO_VENDOR', [
+                    'user_id' => Auth::id(),
+                ]);
                 return back()->withErrors([
                     'vendor' => 'Data vendor tidak ditemukan. Silakan hubungi admin.',
                 ])->withInput();
@@ -354,7 +388,25 @@ class RequestController extends Controller
                 'vendor_id' => $vendor->id,
             ]);
 
+            Log::info('VENDOR_STORE_SIKMB_BEFORE_SERVICE', [
+                'user_id' => Auth::id(),
+                'vendor_id' => $vendor->id,
+                'data_keys' => array_keys($data),
+            ]);
+
             $submittedRequest = $this->requestService->submitSikmb($data);
+
+            Log::info('VENDOR_STORE_SIKMB_SUCCESS', [
+                'user_id' => Auth::id(),
+                'request_id' => $submittedRequest->id,
+            ]);
+
+            // Hapus temporary file dan clear session setelah submit berhasil
+            $tempPath = session('upload_temp_path');
+            if ($tempPath && Storage::disk('local')->exists($tempPath)) {
+                Storage::disk('local')->delete($tempPath);
+            }
+            session()->forget(['upload_temp_path', 'upload_file_name', 'upload_request_type', 'upload_ocr_data']);
 
             return redirect()->route('vendor.requests.show', $submittedRequest->id)
                 ->with('success', 'Surat SIKMB berhasil diajukan! Menunggu approval dari Departemen.');
@@ -363,6 +415,7 @@ class RequestController extends Controller
             Log::error('VENDOR_STORE_SIKMB_EXCEPTION', [
                 'user_id' => Auth::id(),
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return back()->withErrors([
@@ -390,12 +443,23 @@ class RequestController extends Controller
         $uploadedFileName = session('upload_file_name');
         $tempPath = session('upload_temp_path');
 
+        // Gunakan Storage::path() untuk mendapatkan path yang benar
+        $fullPath = $tempPath ? Storage::disk('local')->path($tempPath) : null;
+        $fileExists = $fullPath && file_exists($fullPath);
+
         // Generate preview URL jika ada file
         $previewUrl = null;
-        if ($tempPath && file_exists(storage_path('app/' . $tempPath))) {
-            $fileContent = file_get_contents(storage_path('app/' . $tempPath));
-            $mimeType = mime_content_type(storage_path('app/' . $tempPath));
-            $previewUrl = 'data:' . $mimeType . ';base64,' . base64_encode($fileContent);
+        if ($fileExists) {
+            try {
+                $fileContent = file_get_contents($fullPath);
+                $mimeType = mime_content_type($fullPath);
+                $previewUrl = 'data:' . $mimeType . ';base64,' . base64_encode($fileContent);
+            } catch (\Exception $e) {
+                Log::error('VENDOR_CREATE_SIK_PREVIEW_ERROR', [
+                    'temp_path' => $tempPath,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return Inertia::render('Vendor/Requests/CreateSik', [
@@ -428,6 +492,13 @@ class RequestController extends Controller
             ]);
 
             $submittedRequest = $this->requestService->submitSik($data);
+
+            // Hapus temporary file dan clear session setelah submit berhasil
+            $tempPath = session('upload_temp_path');
+            if ($tempPath && Storage::disk('local')->exists($tempPath)) {
+                Storage::disk('local')->delete($tempPath);
+            }
+            session()->forget(['upload_temp_path', 'upload_file_name', 'upload_request_type', 'upload_ocr_data']);
 
             return redirect()->route('vendor.requests.show', $submittedRequest->id)
                 ->with('success', 'Surat SIK berhasil diajukan! Menunggu approval dari Departemen.');

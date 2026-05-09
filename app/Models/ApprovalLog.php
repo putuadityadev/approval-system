@@ -23,8 +23,12 @@ class ApprovalLog extends Model
 {
     use HasFactory;
 
-    // Disable updated_at karena log immutable
-    const UPDATED_AT = null;
+    /**
+     * Disable timestamps karena kita pakai action_date
+     * 
+     * @var bool
+     */
+    public $timestamps = false;
 
     protected $fillable = [
         'request_id',

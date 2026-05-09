@@ -22,6 +22,13 @@ class SikmDetail extends Model
 {
     use HasFactory;
 
+    /**
+     * Nama table di database
+     * 
+     * @var string
+     */
+    protected $table = 'sikmb_details';
+
     protected $fillable = [
         'request_id',
         'origin_floor',
@@ -55,7 +62,7 @@ class SikmDetail extends Model
      */
     public function items()
     {
-        return $this->hasMany(SikmItem::class);
+        return $this->hasMany(SikmItem::class, 'sikmb_detail_id');
     }
 
     /**

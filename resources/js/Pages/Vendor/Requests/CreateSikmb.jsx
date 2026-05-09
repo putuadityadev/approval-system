@@ -26,23 +26,58 @@ import { useState, useEffect } from 'react';
  * - previewUrl: string base64 URL untuk preview (optional)
  */
 export default function CreateSikmb({ vendor, requestType, ocrData = {}, uploadedFileName, previewUrl }) {
-    const { data, setData, post, processing, errors } = useForm({
-        request_type: requestType,
-        sop_form_code: ocrData.sop_form_code || '',
-        document_serial_no: ocrData.document_serial_no || '',
-        origin_floor: ocrData.origin_floor || '',
-        origin_unit: ocrData.origin_unit || '',
-        start_date: ocrData.start_date || '',
-        end_date: ocrData.end_date || '',
-        start_time: ocrData.start_time || '',
-        end_time: ocrData.end_time || '',
-        dest_address: ocrData.dest_address || '',
-        dest_floor: ocrData.dest_floor || '',
-        dest_phone: ocrData.dest_phone || '',
-        items: ocrData.items && ocrData.items.length > 0 
-            ? ocrData.items 
-            : [{ item_name: '', quantity: 1, unit: '', remarks: '' }]
-    });
+    // Generate unique key untuk localStorage berdasarkan session
+    const formStorageKey = `sikmb_form_${requestType}_${uploadedFileName || 'draft'}`;
+
+    // Load data dari localStorage jika ada, fallback ke ocrData
+    const getInitialData = () => {
+        const savedData = localStorage.getItem(formStorageKey);
+        if (savedData) {
+            try {
+                return JSON.parse(savedData);
+            } catch (e) {
+                console.error('Failed to parse saved form data:', e);
+            }
+        }
+        
+        // Fallback ke OCR data
+        return {
+            request_type: requestType,
+            sop_form_code: ocrData.sop_form_code || '',
+            document_serial_no: ocrData.document_serial_no || '',
+            origin_floor: ocrData.origin_floor || '',
+            origin_unit: ocrData.origin_unit || '',
+            start_date: ocrData.start_date || '',
+            end_date: ocrData.end_date || '',
+            start_time: ocrData.start_time || '',
+            end_time: ocrData.end_time || '',
+            dest_address: ocrData.dest_address || '',
+            dest_floor: ocrData.dest_floor || '',
+            dest_phone: ocrData.dest_phone || '',
+            items: ocrData.items && ocrData.items.length > 0 
+                ? ocrData.items 
+                : [{ item_name: '', quantity: 1, unit: '', remarks: '' }]
+        };
+    };
+
+    const { data, setData, post, processing, errors } = useForm(getInitialData());
+
+    // Save to localStorage whenever data changes
+    useEffect(() => {
+        localStorage.setItem(formStorageKey, JSON.stringify(data));
+    }, [data, formStorageKey]);
+
+    // Clear localStorage on successful submit
+    useEffect(() => {
+        // Jika tidak ada errors dan tidak processing, berarti mungkin sukses atau baru load
+        // Kita clear localStorage saat component unmount (redirect ke page lain)
+        return () => {
+            // Check if we're navigating away (not just re-rendering)
+            if (!processing && Object.keys(errors).length === 0) {
+                // Don't clear immediately, let the submit finish first
+            }
+        };
+    }, [processing, errors]);
 
     const handleAddItem = () => {
         setData('items', [
@@ -64,7 +99,12 @@ export default function CreateSikmb({ vendor, requestType, ocrData = {}, uploade
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        post(route('vendor.requests.store.sikmb'));
+        post(route('vendor.requests.store.sikmb'), {
+            onSuccess: () => {
+                // Clear localStorage on successful submit
+                localStorage.removeItem(formStorageKey);
+            },
+        });
     };
 
     return (

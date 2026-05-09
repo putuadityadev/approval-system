@@ -22,6 +22,13 @@ class RequestEvidence extends Model
 {
     use HasFactory;
 
+    /**
+     * Nama table di database
+     * 
+     * @var string
+     */
+    protected $table = 'request_evidences';
+
     // Disable updated_at karena evidence immutable
     const UPDATED_AT = null;
 
