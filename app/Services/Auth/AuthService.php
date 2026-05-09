@@ -152,6 +152,14 @@ class AuthService
                 // Regenerate session untuk security
                 request()->session()->regenerate();
                 
+                // Debug: Check session setelah regenerate
+                Log::info('AUTH_LOGIN_SESSION_DEBUG', [
+                    'user_id' => $user->id,
+                    'auth_check' => Auth::check(),
+                    'auth_id' => Auth::id(),
+                    'session_id' => request()->session()->getId(),
+                ]);
+                
                 Log::info('AUTH_LOGIN_SUCCESS', [
                     'user_id' => $user->id,
                     'email' => $user->email,

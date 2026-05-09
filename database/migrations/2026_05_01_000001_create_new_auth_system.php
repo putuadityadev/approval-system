@@ -37,7 +37,7 @@ return new class extends Migration
 
         // Buat tabel users dengan role baru
         Schema::create('users', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('email')->unique();
             $table->string('password');
             $table->enum('role', [
@@ -62,8 +62,9 @@ return new class extends Migration
 
         // Buat tabel vendors untuk data perusahaan
         Schema::create('vendors', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->unique()->constrained('users')->onDelete('cascade');
+            $table->uuid('id')->primary();
+            $table->uuid('user_id')->unique();
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->string('company_name');
             $table->string('pic_name')->comment('Person In Charge Name');
             $table->string('pic_phone', 20);
@@ -87,7 +88,7 @@ return new class extends Migration
         // Buat tabel sessions
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
+            $table->uuid('user_id')->nullable()->index();
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->longText('payload');
@@ -96,8 +97,9 @@ return new class extends Migration
 
         // Buat tabel audit_logs
         Schema::create('audit_logs', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->uuid('id')->primary();
+            $table->uuid('user_id')->nullable();
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
             $table->string('user_email');
             $table->string('user_role', 50);
             $table->string('action', 100)->comment('LOGIN, LOGOUT, CREATE_USER, etc');

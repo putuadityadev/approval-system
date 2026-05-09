@@ -388,6 +388,30 @@ class RequestController extends Controller
                 'vendor_id' => $vendor->id,
             ]);
 
+            // Ambil temporary file dari session dan convert ke UploadedFile
+            $tempPath = session('upload_temp_path');
+            if ($tempPath && Storage::disk('local')->exists($tempPath)) {
+                $fullPath = Storage::disk('local')->path($tempPath);
+                $originalFileName = session('upload_file_name', 'uploaded_form.jpg');
+                
+                // Create UploadedFile instance dari temporary file
+                $uploadedFile = new \Illuminate\Http\UploadedFile(
+                    $fullPath,
+                    $originalFileName,
+                    mime_content_type($fullPath),
+                    null,
+                    true // test mode = true (tidak validasi is_uploaded_file)
+                );
+                
+                $data['original_form_image'] = $uploadedFile;
+                
+                Log::info('VENDOR_STORE_SIKMB_FILE_ATTACHED', [
+                    'user_id' => Auth::id(),
+                    'temp_path' => $tempPath,
+                    'file_name' => $originalFileName,
+                ]);
+            }
+
             Log::info('VENDOR_STORE_SIKMB_BEFORE_SERVICE', [
                 'user_id' => Auth::id(),
                 'vendor_id' => $vendor->id,
@@ -402,7 +426,6 @@ class RequestController extends Controller
             ]);
 
             // Hapus temporary file dan clear session setelah submit berhasil
-            $tempPath = session('upload_temp_path');
             if ($tempPath && Storage::disk('local')->exists($tempPath)) {
                 Storage::disk('local')->delete($tempPath);
             }
@@ -491,10 +514,33 @@ class RequestController extends Controller
                 'vendor_id' => $vendor->id,
             ]);
 
+            // Ambil temporary file dari session dan convert ke UploadedFile
+            $tempPath = session('upload_temp_path');
+            if ($tempPath && Storage::disk('local')->exists($tempPath)) {
+                $fullPath = Storage::disk('local')->path($tempPath);
+                $originalFileName = session('upload_file_name', 'uploaded_form.jpg');
+                
+                // Create UploadedFile instance dari temporary file
+                $uploadedFile = new \Illuminate\Http\UploadedFile(
+                    $fullPath,
+                    $originalFileName,
+                    mime_content_type($fullPath),
+                    null,
+                    true // test mode = true (tidak validasi is_uploaded_file)
+                );
+                
+                $data['original_form_image'] = $uploadedFile;
+                
+                Log::info('VENDOR_STORE_SIK_FILE_ATTACHED', [
+                    'user_id' => Auth::id(),
+                    'temp_path' => $tempPath,
+                    'file_name' => $originalFileName,
+                ]);
+            }
+
             $submittedRequest = $this->requestService->submitSik($data);
 
             // Hapus temporary file dan clear session setelah submit berhasil
-            $tempPath = session('upload_temp_path');
             if ($tempPath && Storage::disk('local')->exists($tempPath)) {
                 Storage::disk('local')->delete($tempPath);
             }

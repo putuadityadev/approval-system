@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Approver;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Approver\ApproveRequestRequest;
 use App\Http\Requests\Approver\RejectRequestRequest;
+use App\Models\ApprovalLog;
 use App\Services\ApprovalService;
 use App\Services\RequestService;
 use Illuminate\Support\Facades\Auth;
@@ -224,6 +225,62 @@ class ApprovalController extends Controller
 
             return redirect()->route('approver.dashboard')
                 ->with('error', 'Terjadi kesalahan saat memuat data. Silakan coba lagi.');
+        }
+    }
+
+    /**
+     * Display approver dashboard dengan statistics dan recent activity
+     *
+     * GET /approver/dashboard
+     */
+    public function dashboard()
+    {
+        try {
+            $user = Auth::user();
+            
+            // Mapping role ke label yang lebih friendly
+            $roleLabels = [
+                'approver_dept' => 'Department',
+                'approver_ops' => 'Operations',
+                'approver_finance' => 'Finance',
+                'approver_gm' => 'GM',
+            ];
+            
+            $roleLabel = $roleLabels[$user->role] ?? $user->role;
+            
+            // Get statistics
+            $stats = $this->approvalService->getApproverStatistics($user->id, $user->role);
+            
+            // Get recent approvals (last 5)
+            $recentApprovals = ApprovalLog::with(['request.vendor'])
+                ->where('approver_id', $user->id)
+                ->whereIn('action', ['APPROVED', 'REJECTED'])
+                ->orderBy('action_date', 'desc')
+                ->limit(5)
+                ->get();
+            
+            return Inertia::render('Approver/Dashboard', [
+                'roleLabel' => $roleLabel,
+                'stats' => $stats,
+                'recentApprovals' => $recentApprovals,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('APPROVER_DASHBOARD_EXCEPTION', [
+                'approver_id' => Auth::id(),
+                'error' => $e->getMessage(),
+            ]);
+
+            return Inertia::render('Approver/Dashboard', [
+                'roleLabel' => 'Approver',
+                'stats' => [
+                    'pending' => 0,
+                    'approved' => 0,
+                    'rejected' => 0,
+                    'total' => 0,
+                ],
+                'recentApprovals' => [],
+            ]);
         }
     }
 

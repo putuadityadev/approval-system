@@ -35,8 +35,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('requests', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('vendor_id')->constrained('vendors')->onDelete('restrict');
+            $table->uuid('id')->primary();
+            $table->uuid('vendor_id'); $table->foreign('vendor_id')->references('id')->on('vendors')->onDelete('restrict');
             $table->enum('request_type', ['LOADING_IN', 'LOADING_OUT', 'IJIN_KERJA']);
             $table->enum('status', [
                 'DRAFT',

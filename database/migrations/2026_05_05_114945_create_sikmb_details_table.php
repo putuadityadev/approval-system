@@ -31,8 +31,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('sikmb_details', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('request_id')->unique()->constrained('requests')->onDelete('cascade');
+            $table->uuid('id')->primary();
+            $table->uuid('request_id')->unique(); $table->foreign('request_id')->references('id')->on('requests')->onDelete('cascade');
             $table->string('origin_floor', 50)->nullable()->comment('Lantai asal barang');
             $table->string('origin_unit', 100)->nullable()->comment('Unit/toko asal barang');
             $table->date('start_date')->comment('Tanggal mulai angkut');

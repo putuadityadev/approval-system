@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -39,6 +40,16 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        // Debug logging untuk investigasi UUID session issue
+        \Log::info('INERTIA_SHARE_DEBUG', [
+            'has_user' => $request->user() !== null,
+            'user_id' => $request->user()?->id,
+            'user_email' => $request->user()?->email,
+            'auth_check' => Auth::check(),
+            'auth_id' => Auth::id(),
+            'session_id' => $request->session()->getId(),
+        ]);
+
         return [
             ...parent::share($request),
             'auth' => [

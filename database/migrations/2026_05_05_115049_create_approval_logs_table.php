@@ -36,9 +36,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('approval_logs', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('request_id')->constrained('requests')->onDelete('cascade');
-            $table->foreignId('approver_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->uuid('id')->primary();
+            $table->uuid('request_id'); $table->foreign('request_id')->references('id')->on('requests')->onDelete('cascade');
+            $table->uuid('approver_id')->nullable(); $table->foreign('approver_id')->references('id')->on('users')->onDelete('set null');
             $table->string('approver_role', 50)->comment('Role yang melakukan aksi');
             $table->enum('action', ['SUBMITTED', 'APPROVED', 'REJECTED', 'CANCELLED']);
             $table->string('from_status', 50)->nullable()->comment('Status sebelum aksi');

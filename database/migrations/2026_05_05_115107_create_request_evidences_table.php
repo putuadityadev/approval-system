@@ -36,9 +36,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('request_evidences', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('request_id')->constrained('requests')->onDelete('cascade');
-            $table->foreignId('uploaded_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->uuid('id')->primary();
+            $table->uuid('request_id'); $table->foreign('request_id')->references('id')->on('requests')->onDelete('cascade');
+            $table->uuid('uploaded_by')->nullable(); $table->foreign('uploaded_by')->references('id')->on('users')->onDelete('set null');
             $table->enum('evidence_type', [
                 'SECURITY_LOADING_IN',
                 'SECURITY_LOADING_OUT',

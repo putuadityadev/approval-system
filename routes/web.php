@@ -226,26 +226,8 @@ Route::middleware(['auth', 'active', 'role:vendor'])->prefix('vendor')->name('ve
 Route::middleware(['auth', 'active', 'role:approver_dept,approver_ops,approver_finance,approver_gm'])->prefix('approver')->name('approver.')->group(function () {
     
     // Approver Dashboard
-    Route::get('/dashboard', function () {
-        $user = auth()->user();
-        
-        // Mapping role ke label yang lebih friendly
-        $roleLabels = [
-            'approver_dept' => 'Department',
-            'approver_ops' => 'Operations',
-            'approver_finance' => 'Finance',
-            'approver_gm' => 'GM',
-        ];
-        
-        $roleLabel = $roleLabels[$user->role] ?? $user->role;
-        
-        return Inertia::render('Approver/Dashboard', [
-            'auth' => [
-                'user' => $user,
-            ],
-            'roleLabel' => $roleLabel,
-        ]);
-    })->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\Approver\ApprovalController::class, 'dashboard'])
+        ->name('dashboard');
 
     // Request Management Routes
     Route::get('/requests', [\App\Http\Controllers\Approver\ApprovalController::class, 'index'])

@@ -258,8 +258,76 @@ class ApprovalService
         return ApprovalLog::with(['request.vendor', 'request.sikmDetail', 'request.sikDetail'])
             ->where('approver_id', $approverId)
             ->whereIn('action', ['APPROVED', 'REJECTED'])
-            ->orderBy('created_at', 'desc')
+            ->orderBy('action_date', 'desc')
             ->paginate($perPage);
+    }
+
+    /**
+     * Get statistics untuk approver dashboard
+     *
+     * Apa yang dilakukan:
+     * Menghitung jumlah pending, approved, rejected, dan total approval
+     *
+     * Cara kerja:
+     * 1. Hitung pending requests berdasarkan role approver
+     * 2. Hitung approved count dari approval_logs
+     * 3. Hitung rejected count dari approval_logs
+     * 4. Total = approved + rejected
+     *
+     * @param int $approverId — ID approver
+     * @param string $approverRole — Role approver
+     * @return array — ['pending' => int, 'approved' => int, 'rejected' => int, 'total' => int]
+     */
+    public function getApproverStatistics(int $approverId, string $approverRole): array
+    {
+        try {
+            // Mapping role ke status untuk pending count
+            $statusMap = [
+                'approver_dept' => 'SUBMITTED',
+                'approver_ops' => 'PENDING_DEPT',
+                'approver_finance' => 'PENDING_OPS',
+                'approver_gm' => 'PENDING_FINANCE',
+            ];
+            
+            $pendingStatus = $statusMap[$approverRole] ?? null;
+            
+            // Count pending requests
+            $pendingCount = $pendingStatus 
+                ? Request::where('status', $pendingStatus)->count()
+                : 0;
+            
+            // Count approved & rejected by this approver
+            $approvedCount = ApprovalLog::where('approver_id', $approverId)
+                ->where('action', 'APPROVED')
+                ->count();
+            
+            $rejectedCount = ApprovalLog::where('approver_id', $approverId)
+                ->where('action', 'REJECTED')
+                ->count();
+            
+            $totalCount = $approvedCount + $rejectedCount;
+            
+            return [
+                'pending' => $pendingCount,
+                'approved' => $approvedCount,
+                'rejected' => $rejectedCount,
+                'total' => $totalCount,
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('APPROVAL_GET_STATISTICS_FAILED', [
+                'approver_id' => $approverId,
+                'approver_role' => $approverRole,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'pending' => 0,
+                'approved' => 0,
+                'rejected' => 0,
+                'total' => 0,
+            ];
+        }
     }
 
     /**

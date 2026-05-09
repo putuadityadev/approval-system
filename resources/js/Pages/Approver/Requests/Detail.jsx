@@ -173,14 +173,14 @@ function ApproverRequestDetail({ auth, request, roleLabel, canApprove }) {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Main Content */}
-                        <div className="lg:col-span-2 space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Left Column - Main Content */}
+                        <div className="space-y-6">
                             {/* Informasi Umum */}
                             <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                                 <div className="p-6">
                                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Informasi Umum</h3>
-                                    <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <dl className="grid grid-cols-1 gap-4">
                                         <div>
                                             <dt className="text-sm font-medium text-gray-500">Tipe Surat</dt>
                                             <dd className="mt-1 text-sm text-gray-900">{getRequestTypeLabel(request.request_type)}</dd>
@@ -213,7 +213,7 @@ function ApproverRequestDetail({ auth, request, roleLabel, canApprove }) {
                                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                                         <div className="p-6">
                                             <h3 className="text-lg font-semibold text-gray-900 mb-4">Detail Pengiriman</h3>
-                                            <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <dl className="grid grid-cols-1 gap-4">
                                                 <div>
                                                     <dt className="text-sm font-medium text-gray-500">Tanggal</dt>
                                                     <dd className="mt-1 text-sm text-gray-900">
@@ -226,7 +226,20 @@ function ApproverRequestDetail({ auth, request, roleLabel, canApprove }) {
                                                         {request.sikmb_detail.start_time} - {request.sikmb_detail.end_time}
                                                     </dd>
                                                 </div>
-                                                <div className="md:col-span-2">
+                                                <div>
+                                                    <dt className="text-sm font-medium text-gray-500">Asal</dt>
+                                                    <dd className="mt-1 text-sm text-gray-900">
+                                                        Lantai {request.sikmb_detail.origin_floor}
+                                                        {request.sikmb_detail.origin_unit && ` - Unit ${request.sikmb_detail.origin_unit}`}
+                                                    </dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="text-sm font-medium text-gray-500">Tujuan</dt>
+                                                    <dd className="mt-1 text-sm text-gray-900">
+                                                        Lantai {request.sikmb_detail.dest_floor}
+                                                    </dd>
+                                                </div>
+                                                <div>
                                                     <dt className="text-sm font-medium text-gray-500">Alamat Tujuan</dt>
                                                     <dd className="mt-1 text-sm text-gray-900">{request.sikmb_detail.dest_address}</dd>
                                                 </div>
@@ -276,7 +289,7 @@ function ApproverRequestDetail({ auth, request, roleLabel, canApprove }) {
                                 <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                                     <div className="p-6">
                                         <h3 className="text-lg font-semibold text-gray-900 mb-4">Detail Pekerjaan</h3>
-                                        <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <dl className="grid grid-cols-1 gap-4">
                                             <div>
                                                 <dt className="text-sm font-medium text-gray-500">Jumlah Pekerja</dt>
                                                 <dd className="mt-1 text-sm text-gray-900">{request.sik_detail.worker_count} orang</dd>
@@ -297,12 +310,12 @@ function ApproverRequestDetail({ auth, request, roleLabel, canApprove }) {
                                                     {request.sik_detail.start_time} - {request.sik_detail.end_time}
                                                 </dd>
                                             </div>
-                                            <div className="md:col-span-2">
+                                            <div>
                                                 <dt className="text-sm font-medium text-gray-500">Lokasi</dt>
                                                 <dd className="mt-1 text-sm text-gray-900">{request.sik_detail.location}</dd>
                                             </div>
                                             {request.sik_detail.description && (
-                                                <div className="md:col-span-2">
+                                                <div>
                                                     <dt className="text-sm font-medium text-gray-500">Deskripsi</dt>
                                                     <dd className="mt-1 text-sm text-gray-900">{request.sik_detail.description}</dd>
                                                 </div>
@@ -311,6 +324,36 @@ function ApproverRequestDetail({ auth, request, roleLabel, canApprove }) {
                                     </div>
                                 </div>
                             )}
+
+                            {/* Timeline Approval */}
+                            <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                                <div className="p-6">
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Timeline Approval</h3>
+                                    <div className="space-y-4">
+                                        {request.approval_logs?.map((log, index) => (
+                                            <div key={log.id} className="flex gap-3">
+                                                {getActionIcon(log.action)}
+                                                <div className="flex-1">
+                                                    <p className="text-sm font-medium text-gray-900">
+                                                        {log.action === 'APPROVED' ? 'Disetujui' : log.action === 'REJECTED' ? 'Ditolak' : 'Diajukan'}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500">
+                                                        {log.approver?.email || 'System'}
+                                                    </p>
+                                                    <p className="text-xs text-gray-400 mt-1">
+                                                        {formatDate(log.action_date)}
+                                                    </p>
+                                                    {log.notes && (
+                                                        <p className="text-xs text-gray-600 mt-2 italic">
+                                                            "{log.notes}"
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
 
                             {/* Action Buttons */}
                             {canApprove && (
@@ -344,34 +387,57 @@ function ApproverRequestDetail({ auth, request, roleLabel, canApprove }) {
                             )}
                         </div>
 
-                        {/* Sidebar - Approval Timeline */}
-                        <div className="lg:col-span-1">
-                            <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg sticky top-6">
+                        {/* Right Column - Preview Surat (Sticky) */}
+                        <div className="lg:sticky lg:top-6 lg:self-start">
+                            <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                                 <div className="p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Timeline Approval</h3>
-                                    <div className="space-y-4">
-                                        {request.approval_logs?.map((log, index) => (
-                                            <div key={log.id} className="flex gap-3">
-                                                {getActionIcon(log.action)}
-                                                <div className="flex-1">
-                                                    <p className="text-sm font-medium text-gray-900">
-                                                        {log.action === 'APPROVED' ? 'Disetujui' : log.action === 'REJECTED' ? 'Ditolak' : 'Diajukan'}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500">
-                                                        {log.approver?.email || 'System'}
-                                                    </p>
-                                                    <p className="text-xs text-gray-400 mt-1">
-                                                        {formatDate(log.created_at)}
-                                                    </p>
-                                                    {log.notes && (
-                                                        <p className="text-xs text-gray-600 mt-2 italic">
-                                                            "{log.notes}"
-                                                        </p>
-                                                    )}
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Preview Surat</h3>
+                                    
+                                    {request.original_form_image ? (
+                                        <div className="space-y-4">
+                                            <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                                <img
+                                                    src={request.original_form_image}
+                                                    alt="Preview Surat"
+                                                    className="w-full h-auto"
+                                                    onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.nextElementSibling.style.display = 'flex';
+                                                    }}
+                                                />
+                                                <div className="hidden flex-col items-center justify-center p-8 bg-gray-50">
+                                                    <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                    <p className="text-sm text-gray-500">Gagal memuat preview</p>
                                                 </div>
                                             </div>
-                                        ))}
-                                    </div>
+                                            
+                                            <a
+                                                href={request.original_form_image}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors"
+                                            >
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                </svg>
+                                                Buka di Tab Baru
+                                            </a>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center p-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                                            <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            <p className="text-sm text-gray-500 text-center">
+                                                Tidak ada preview surat
+                                            </p>
+                                            <p className="text-xs text-gray-400 text-center mt-1">
+                                                Vendor tidak mengupload dokumen fisik
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

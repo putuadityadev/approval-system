@@ -30,8 +30,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('sik_details', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('request_id')->unique()->constrained('requests')->onDelete('cascade');
+            $table->uuid('id')->primary();
+            $table->uuid('request_id')->unique(); $table->foreign('request_id')->references('id')->on('requests')->onDelete('cascade');
             $table->integer('worker_count')->comment('Jumlah tenaga kerja (harus > 0)');
             $table->date('start_date')->comment('Tanggal mulai kerja');
             $table->date('end_date')->comment('Tanggal selesai kerja');

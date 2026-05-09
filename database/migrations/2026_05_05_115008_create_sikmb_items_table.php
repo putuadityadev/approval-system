@@ -29,8 +29,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('sikmb_items', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('sikmb_detail_id')->constrained('sikmb_details')->onDelete('cascade');
+            $table->uuid('id')->primary();
+            $table->uuid('sikmb_detail_id'); $table->foreign('sikmb_detail_id')->references('id')->on('sikmb_details')->onDelete('cascade');
             $table->string('item_name')->comment('Nama barang');
             $table->integer('quantity')->comment('Jumlah barang (harus > 0)');
             $table->string('unit', 50)->comment('Satuan (kotak, pcs, dus, dll)');
