@@ -181,6 +181,16 @@ Route::middleware(['auth', 'active', 'role:vendor'])->prefix('vendor')->name('ve
     Route::get('/requests', [\App\Http\Controllers\Vendor\RequestController::class, 'index'])
         ->name('requests.index');
     
+    // My Documents
+    Route::get('/documents', [\App\Http\Controllers\Vendor\DocumentController::class, 'index'])
+        ->name('documents.index');
+    
+    // My Profile
+    Route::get('/profile', [\App\Http\Controllers\Vendor\ProfileController::class, 'index'])
+        ->name('profile.index');
+    Route::post('/profile/password', [\App\Http\Controllers\Vendor\ProfileController::class, 'updatePassword'])
+        ->name('profile.password.update');
+    
     // New Flow: Upload & OCR first, then create form
     Route::post('/requests/upload-and-scan', [\App\Http\Controllers\Vendor\RequestController::class, 'uploadAndScan'])
         ->name('requests.upload-scan');

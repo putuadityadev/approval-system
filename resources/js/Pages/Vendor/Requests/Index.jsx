@@ -1,6 +1,8 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import UploadScanModal from '@/Components/shared/UploadScanModal';
+import Button from '@/Components/ui/Button';
 
 /**
  * Index (List Requests)
@@ -25,7 +27,9 @@ import UploadScanModal from '@/Components/shared/UploadScanModal';
  * - vendor: objek vendor { id, company_name, pic_name, pic_phone, address }
  */
 export default function Index({ requests, vendor }) {
+    const { auth } = usePage().props;
     const [isModalOpen, setIsModalOpen] = useState(false);
+
     /**
      * getStatusBadgeClass
      *
@@ -93,41 +97,36 @@ export default function Index({ requests, vendor }) {
      * formatDate
      *
      * Apa yang dilakukan:
-     * Format tanggal ke format Indonesia (DD/MM/YYYY HH:mm)
+     * Format tanggal ke format Indonesia (DD MMM YYYY)
      */
     const formatDate = (dateString) => {
         const date = new Date(dateString);
-        return date.toLocaleString('id-ID', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = date.toLocaleString('id-ID', { month: 'short' });
+        const year = date.getFullYear();
+        return `${day} ${month} ${year}`;
     };
 
     return (
-        <>
-            <Head title="Daftar Surat" />
+        <AuthenticatedLayout auth={auth}>
+            <Head title="My Requests" />
 
-            <div className="min-h-screen bg-gray-50 py-8">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {/* Header */}
-                    <div className="mb-8 flex justify-between items-center">
+            <div className="py-8">
+                <div className="max-w-7xl mx-auto space-y-8">
+                    {/* Page Header */}
+                    <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900">
-                                Daftar Surat
-                            </h1>
-                            <p className="mt-2 text-gray-600">
-                                Total: {requests.total} surat
-                            </p>
+                            <h2 className="text-[30px] font-extrabold text-foreground tracking-tight">My Requests</h2>
+                            <p className="text-[14px] font-medium text-muted-foreground mt-1">Lacak dan kelola semua pengajuan surat Anda.</p>
                         </div>
-                        <button
+                        <Button 
+                            variant="primary" 
+                            className="bg-primary text-primary-foreground font-bold py-2 px-4 rounded hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 flex items-center gap-2 justify-center"
                             onClick={() => setIsModalOpen(true)}
-                            className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium transition-colors"
                         >
-                            + Buat Request Baru
-                        </button>
+                            <span className="material-symbols-outlined text-[20px]">add</span>
+                            Buat Surat Baru
+                        </Button>
                     </div>
 
                     {/* Upload & Scan Modal */}
@@ -136,97 +135,70 @@ export default function Index({ requests, vendor }) {
                         onClose={() => setIsModalOpen(false)}
                     />
 
-                    {/* Table */}
-                    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                        {requests.data.length === 0 ? (
-                            <div className="text-center py-12">
-                                <svg
-                                    className="mx-auto h-12 w-12 text-gray-400"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                    />
-                                </svg>
-                                <h3 className="mt-2 text-sm font-medium text-gray-900">
-                                    Belum ada surat
-                                </h3>
-                                <p className="mt-1 text-sm text-gray-500">
-                                    Mulai dengan membuat surat baru
-                                </p>
-                                <div className="mt-6">
-                                    <Link
-                                        href="/vendor/requests/create"
-                                        className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                                    >
-                                        + Buat Surat Baru
-                                    </Link>
+                    {/* Center Content Module */}
+                    <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden flex flex-col min-h-[400px]">
+                        {/* Title Bar */}
+                        <div className="p-6 border-b border-border bg-card">
+                            <h3 className="text-[18px] font-bold text-card-foreground">Daftar Pengajuan</h3>
+                        </div>
+
+                        {/* Table */}
+                        <div className="overflow-x-auto flex-1 bg-card">
+                            {requests.data.length === 0 ? (
+                                <div className="text-center py-16">
+                                    <span className="material-symbols-outlined text-5xl text-muted-foreground mb-3">folder_open</span>
+                                    <h3 className="mt-2 text-[16px] font-bold text-foreground">
+                                        Belum ada surat
+                                    </h3>
+                                    <p className="mt-1 text-[14px] font-medium text-muted-foreground">
+                                        Mulai dengan membuat surat pengajuan pertama Anda.
+                                    </p>
+                                    <div className="mt-6">
+                                        <Button variant="primary" onClick={() => setIsModalOpen(true)} className="flex items-center justify-center gap-2 mx-auto">
+                                            <span className="material-symbols-outlined text-[20px]">add</span>
+                                            Buat Surat Baru
+                                        </Button>
+                                    </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <>
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                No. Dokumen
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Tipe Surat
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Status
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Tanggal Dibuat
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Aksi
-                                            </th>
+                            ) : (
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-border bg-muted/50">
+                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">No. Dokumen</th>
+                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tipe Surat</th>
+                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tanggal</th>
+                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Status</th>
+                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-right">Aksi</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
+                                    <tbody className="divide-y divide-border/50">
                                         {requests.data.map((request) => (
-                                            <tr
-                                                key={request.id}
-                                                className="hover:bg-gray-50 transition-colors"
-                                            >
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-medium text-gray-900">
+                                            <tr key={request.id} className="hover:bg-muted/50 transition-colors">
+                                                <td className="px-6 py-4">
+                                                    <div className="text-[14px] font-bold text-foreground">
                                                         {request.document_serial_no}
                                                     </div>
                                                     {request.sop_form_code && (
-                                                        <div className="text-xs text-gray-500">
+                                                        <div className="text-[12px] font-medium text-muted-foreground">
                                                             {request.sop_form_code}
                                                         </div>
                                                     )}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">
-                                                        {getTypeLabel(request.request_type)}
-                                                    </div>
+                                                <td className="px-6 py-4 text-[14px] font-medium text-muted-foreground">
+                                                    {getTypeLabel(request.request_type)}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span
-                                                        className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                                                            request.status
-                                                        )}`}
-                                                    >
+                                                <td className="px-6 py-4 text-[14px] font-medium text-muted-foreground">
+                                                    {formatDate(request.created_at)}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`inline-flex items-center px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm ${getStatusBadgeClass(request.status)}`}>
                                                         {getStatusLabel(request.status)}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {formatDate(request.created_at)}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                <td className="px-6 py-4 text-right">
                                                     <Link
                                                         href={`/vendor/requests/${request.id}`}
-                                                        className="text-blue-600 hover:text-blue-900"
+                                                        className="text-[14px] font-bold text-primary hover:text-blue-800 transition-colors"
                                                     >
                                                         Lihat Detail
                                                     </Link>
@@ -235,76 +207,68 @@ export default function Index({ requests, vendor }) {
                                         ))}
                                     </tbody>
                                 </table>
+                            )}
+                        </div>
 
-                                {/* Pagination */}
-                                {requests.last_page > 1 && (
-                                    <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-                                        <div className="flex-1 flex justify-between sm:hidden">
-                                            {requests.prev_page_url && (
+                        {/* Footer Pagination */}
+                        {requests.last_page > 1 && (
+                            <div className="p-6 border-t border-border bg-card flex justify-between items-center gap-4 mt-auto">
+                                <div className="text-[12px] font-medium text-muted-foreground hidden sm:block">
+                                    Menampilkan <span className="font-bold text-foreground">{requests.from}</span> sampai <span className="font-bold text-foreground">{requests.to}</span> dari <span className="font-bold text-foreground">{requests.total}</span>
+                                </div>
+                                
+                                <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                                    {requests.prev_page_url ? (
+                                        <Link
+                                            href={requests.prev_page_url}
+                                            className="text-[14px] font-bold text-muted-foreground hover:text-foreground transition-colors px-3 py-1"
+                                        >
+                                            Previous
+                                        </Link>
+                                    ) : (
+                                        <button className="text-[14px] font-bold text-muted-foreground opacity-50 cursor-not-allowed px-3 py-1" disabled>
+                                            Previous
+                                        </button>
+                                    )}
+                                    
+                                    <div className="hidden sm:flex items-center gap-1">
+                                        {requests.links.map((link, index) => {
+                                            // Skip 'Previous' and 'Next' standard links since we have custom buttons for them
+                                            if (link.label.includes('Previous') || link.label.includes('Next')) return null;
+                                            
+                                            return (
                                                 <Link
-                                                    href={requests.prev_page_url}
-                                                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                                                >
-                                                    Previous
-                                                </Link>
-                                            )}
-                                            {requests.next_page_url && (
-                                                <Link
-                                                    href={requests.next_page_url}
-                                                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                                                >
-                                                    Next
-                                                </Link>
-                                            )}
-                                        </div>
-                                        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                                            <div>
-                                                <p className="text-sm text-gray-700">
-                                                    Menampilkan{' '}
-                                                    <span className="font-medium">
-                                                        {requests.from}
-                                                    </span>{' '}
-                                                    sampai{' '}
-                                                    <span className="font-medium">
-                                                        {requests.to}
-                                                    </span>{' '}
-                                                    dari{' '}
-                                                    <span className="font-medium">
-                                                        {requests.total}
-                                                    </span>{' '}
-                                                    surat
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                                                    {requests.links.map((link, index) => (
-                                                        <Link
-                                                            key={index}
-                                                            href={link.url || '#'}
-                                                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                                                                link.active
-                                                                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                                                                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                                                            } ${
-                                                                !link.url
-                                                                    ? 'cursor-not-allowed opacity-50'
-                                                                    : ''
-                                                            }`}
-                                                            dangerouslySetInnerHTML={{
-                                                                __html: link.label,
-                                                            }}
-                                                        />
-                                                    ))}
-                                                </nav>
-                                            </div>
-                                        </div>
+                                                    key={index}
+                                                    href={link.url || '#'}
+                                                    className={`w-8 h-8 flex items-center justify-center rounded text-[12px] font-medium transition-colors ${
+                                                        link.active
+                                                            ? 'bg-primary text-primary-foreground font-bold'
+                                                            : 'text-muted-foreground hover:bg-muted'
+                                                    } ${!link.url ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                                />
+                                            );
+                                        })}
                                     </div>
-                                )}
-                            </>
+
+                                    {requests.next_page_url ? (
+                                        <Link
+                                            href={requests.next_page_url}
+                                            className="text-[14px] font-bold text-primary hover:text-blue-800 transition-colors px-3 py-1"
+                                        >
+                                            Next
+                                        </Link>
+                                    ) : (
+                                        <button className="text-[14px] font-bold text-primary opacity-50 cursor-not-allowed px-3 py-1" disabled>
+                                            Next
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
                         )}
                     </div>
                 </div>
             </div>
-        </>
+        </AuthenticatedLayout>
     );
 }

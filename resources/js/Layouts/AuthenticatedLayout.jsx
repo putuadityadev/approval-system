@@ -26,6 +26,7 @@
 import { useState } from 'react';
 import { Link } from '@inertiajs/react';
 import UserMenu from '@/Components/shared/UserMenu';
+import Sidebar from '@/Components/shared/Sidebar';
 
 function AuthenticatedLayout({ auth, children }) {
     // State untuk kontrol sidebar visibility di mobile
@@ -64,69 +65,32 @@ function AuthenticatedLayout({ auth, children }) {
         // Super Admin navigation
         if (role === 'super_admin') {
             return [
-                {
-                    name: 'Dashboard',
-                    href: '/admin/dashboard',
-                    icon: (
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                    ),
-                },
-                {
-                    name: 'User Management',
-                    href: '/admin/users',
-                    icon: (
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                    ),
-                },
+                { name: 'Dashboard', href: '/admin/dashboard', icon: 'dashboard' },
+                { name: 'User Management', href: '/admin/users', icon: 'group' },
             ];
         }
 
         // Vendor navigation
         if (role === 'vendor') {
             return [
-                {
-                    name: 'Dashboard',
-                    href: '/vendor/dashboard',
-                    icon: (
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                    ),
-                },
+                { name: 'Dashboard', href: '/vendor/dashboard', icon: 'dashboard' },
+                { name: 'My Requests', href: '/vendor/requests', icon: 'list_alt' },
+                { name: 'My Documents', href: '/vendor/documents', icon: 'folder_open' },
+                { name: 'My Profile', href: '/vendor/profile', icon: 'person' },
             ];
         }
 
         // Approver navigation (all 4 approver roles)
         if (['approver_dept', 'approver_ops', 'approver_finance', 'approver_gm'].includes(role)) {
             return [
-                {
-                    name: 'Dashboard',
-                    href: '/approver/dashboard',
-                    icon: (
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                    ),
-                },
+                { name: 'Dashboard', href: '/approver/dashboard', icon: 'dashboard' },
             ];
         }
 
         // Security navigation
         if (role === 'security') {
             return [
-                {
-                    name: 'Dashboard',
-                    href: '/security/dashboard',
-                    icon: (
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                    ),
-                },
+                { name: 'Dashboard', href: '/security/dashboard', icon: 'dashboard' },
             ];
         }
 
@@ -137,123 +101,39 @@ function AuthenticatedLayout({ auth, children }) {
     const navigationItems = getNavigationItems();
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            {/* Navbar */}
-            <nav className="bg-white shadow-sm border-b border-gray-200 fixed w-full z-30 top-0">
-                <div className="px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16">
-                        {/* Left side: Logo + Hamburger */}
-                        <div className="flex items-center">
-                            {/* Hamburger button (mobile only) */}
-                            <button
-                                type="button"
-                                onClick={toggleSidebar}
-                                className="
-                                    inline-flex items-center justify-center p-2 rounded-md
-                                    text-gray-400 hover:text-gray-500 hover:bg-gray-100
-                                    focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500
-                                    lg:hidden
-                                "
-                                aria-expanded={sidebarOpen}
-                            >
-                                <span className="sr-only">Open sidebar</span>
-                                <svg
-                                    className="h-6 w-6"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M4 6h16M4 12h16M4 18h16"
-                                    />
-                                </svg>
-                            </button>
-
-                            {/* Logo */}
-                            <Link
-                                href="/"
-                                className="flex items-center space-x-2 ml-4 lg:ml-0"
-                            >
-                                <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                                    <svg
-                                        className="h-5 w-5 text-white"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                                        />
-                                    </svg>
-                                </div>
-                                <span className="text-lg font-semibold text-gray-900 hidden sm:block">
-                                    Mall Approval
-                                </span>
-                            </Link>
-                        </div>
-
-                        {/* Right side: UserMenu */}
-                        <div className="flex items-center">
-                            <UserMenu user={auth.user} />
-                        </div>
-                    </div>
-                </div>
-            </nav>
+        <div className="min-h-screen bg-gray-100 flex flex-col">
+            {/* Mobile Header (Only visible on small screens) */}
+            <div className="lg:hidden bg-white shadow-sm border-b border-gray-200 w-full z-30 h-16 flex items-center justify-between px-4 shrink-0 fixed top-0">
+                <div className="font-extrabold text-slate-900 tracking-tight">Mall Approval</div>
+                <button
+                    type="button"
+                    onClick={toggleSidebar}
+                    className="p-2 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 focus:outline-none"
+                >
+                    <span className="material-symbols-outlined">menu</span>
+                </button>
+            </div>
 
             {/* Sidebar overlay (mobile only) */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-gray-600 bg-opacity-75 z-20 lg:hidden"
+                    className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden transition-opacity"
                     onClick={closeSidebar}
                     aria-hidden="true"
                 />
             )}
 
-            {/* Sidebar */}
-            <aside
-                className={`
-                    fixed top-16 left-0 z-20 h-[calc(100vh-4rem)] w-64 bg-white border-r border-gray-200
-                    transform transition-transform duration-300 ease-in-out
-                    lg:translate-x-0
-                    ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-                `}
-            >
-                <nav className="h-full overflow-y-auto py-4 px-3">
-                    <ul className="space-y-1">
-                        {navigationItems.map((item) => (
-                            <li key={item.name}>
-                                <Link
-                                    href={item.href}
-                                    onClick={closeSidebar}
-                                    className="
-                                        flex items-center space-x-3 px-3 py-2 rounded-lg
-                                        text-gray-700 hover:bg-blue-50 hover:text-blue-600
-                                        transition-colors duration-150
-                                        group
-                                    "
-                                >
-                                    <span className="text-gray-400 group-hover:text-blue-600">
-                                        {item.icon}
-                                    </span>
-                                    <span className="font-medium">
-                                        {item.name}
-                                    </span>
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
-                </nav>
-            </aside>
+            {/* Sidebar Component */}
+            <Sidebar 
+                navigationItems={navigationItems}
+                sidebarOpen={sidebarOpen}
+                closeSidebar={closeSidebar}
+                user={auth.user}
+            />
 
             {/* Main content */}
-            <main className="pt-16 lg:pl-64">
-                <div className="py-6 px-4 sm:px-6 lg:px-8">{children}</div>
+            <main className="pt-16 lg:pt-0 lg:pl-[280px] flex-1 flex flex-col">
+                <div className="py-6 px-4 sm:px-6 lg:px-8 flex-1">{children}</div>
             </main>
         </div>
     );

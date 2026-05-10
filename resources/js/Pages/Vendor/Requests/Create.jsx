@@ -1,173 +1,118 @@
 import { Head, Link } from '@inertiajs/react';
 
-/**
- * Create (Pilih Tipe Surat)
- *
- * Komponen ini digunakan untuk:
- * - Menampilkan pilihan tipe surat (SIKMB atau SIK)
- * - Redirect ke form yang sesuai berdasarkan pilihan user
- *
- * Cara kerjanya:
- * 1. Menerima data vendor dari backend
- * 2. Menampilkan 3 card pilihan: SIKMB Barang Masuk, SIKMB Barang Keluar, SIK
- * 3. Setiap card adalah link ke form yang sesuai
- *
- * Props:
- * - vendor: objek vendor { id, company_name, pic_name, pic_phone, address }
- */
 export default function Create({ vendor }) {
     return (
         <>
             <Head title="Buat Surat Baru" />
 
-            <div className="min-h-screen bg-gray-50 py-8">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8 -mt-6 -mx-4 sm:-mx-6 lg:-mx-8">
+                <div className="max-w-6xl mx-auto space-y-6 py-6">
                     {/* Header */}
-                    <div className="mb-8">
+                    <div>
                         <Link
                             href="/vendor/requests"
-                            className="text-sm text-gray-600 hover:text-gray-900 mb-2 inline-block"
+                            className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-primary bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200 hover:border-primary/50 transition-all mb-6 group"
                         >
-                            ← Kembali ke Daftar Surat
+                            <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
+                            Kembali ke Daftar Surat
                         </Link>
-                        <h1 className="text-3xl font-bold text-gray-900">
-                            Buat Surat Baru
-                        </h1>
-                        <p className="mt-2 text-gray-600">
-                            Pilih jenis surat yang ingin Anda ajukan
-                        </p>
+                        <div>
+                            <h1 className="text-[24px] sm:text-[30px] font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
+                                <span className="material-symbols-outlined text-primary text-[32px]">post_add</span>
+                                Buat Surat Baru
+                            </h1>
+                            <p className="mt-2 text-sm font-medium text-slate-500">
+                                Pilih jenis surat yang ingin Anda ajukan untuk keperluan di area mall.
+                            </p>
+                        </div>
                     </div>
 
                     {/* Cards Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
                         {/* SIKMB Barang Masuk */}
                         <Link
                             href="/vendor/requests/create/sikmb?type=LOADING_IN"
-                            className="block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-6 border-2 border-transparent hover:border-blue-500"
+                            className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all p-6 border-2 border-transparent hover:border-primary flex flex-col h-full relative overflow-hidden"
                         >
-                            <div className="flex items-center justify-center w-16 h-16 bg-blue-100 rounded-lg mb-4">
-                                <svg
-                                    className="w-8 h-8 text-blue-600"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                                    />
-                                </svg>
+                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+                            <div className="flex items-center justify-center w-14 h-14 bg-primary/10 rounded-xl mb-6 relative z-10">
+                                <span className="material-symbols-outlined text-primary text-[28px]">login</span>
                             </div>
-                            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                            <h3 className="text-[18px] font-bold text-slate-900 mb-2 relative z-10">
                                 Barang Masuk
                             </h3>
-                            <p className="text-gray-600 text-sm">
-                                Surat Izin Keluar/Masuk Barang (SIKMB) untuk barang yang masuk ke mall
+                            <p className="text-slate-500 text-[13px] leading-relaxed flex-1 relative z-10">
+                                Surat Izin Keluar/Masuk Barang (SIKMB) untuk mendaftarkan barang yang akan dimasukkan ke area mall.
                             </p>
-                            <div className="mt-4 text-blue-600 text-sm font-medium">
-                                Pilih →
+                            <div className="mt-6 flex items-center gap-2 text-primary text-[13px] font-bold relative z-10 group-hover:gap-3 transition-all">
+                                Buat Surat <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                             </div>
                         </Link>
 
                         {/* SIKMB Barang Keluar */}
                         <Link
                             href="/vendor/requests/create/sikmb?type=LOADING_OUT"
-                            className="block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-6 border-2 border-transparent hover:border-green-500"
+                            className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all p-6 border-2 border-transparent hover:border-green-500 flex flex-col h-full relative overflow-hidden"
                         >
-                            <div className="flex items-center justify-center w-16 h-16 bg-green-100 rounded-lg mb-4">
-                                <svg
-                                    className="w-8 h-8 text-green-600"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                                    />
-                                </svg>
+                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-green-500/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+                            <div className="flex items-center justify-center w-14 h-14 bg-green-500/10 rounded-xl mb-6 relative z-10">
+                                <span className="material-symbols-outlined text-green-600 text-[28px]">logout</span>
                             </div>
-                            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                            <h3 className="text-[18px] font-bold text-slate-900 mb-2 relative z-10">
                                 Barang Keluar
                             </h3>
-                            <p className="text-gray-600 text-sm">
-                                Surat Izin Keluar/Masuk Barang (SIKMB) untuk barang yang keluar dari mall
+                            <p className="text-slate-500 text-[13px] leading-relaxed flex-1 relative z-10">
+                                Surat Izin Keluar/Masuk Barang (SIKMB) untuk mendaftarkan barang yang akan dikeluarkan dari area mall.
                             </p>
-                            <div className="mt-4 text-green-600 text-sm font-medium">
-                                Pilih →
+                            <div className="mt-6 flex items-center gap-2 text-green-600 text-[13px] font-bold relative z-10 group-hover:gap-3 transition-all">
+                                Buat Surat <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                             </div>
                         </Link>
 
                         {/* SIK */}
                         <Link
                             href="/vendor/requests/create/sik"
-                            className="block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-6 border-2 border-transparent hover:border-purple-500"
+                            className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all p-6 border-2 border-transparent hover:border-purple-500 flex flex-col h-full relative overflow-hidden"
                         >
-                            <div className="flex items-center justify-center w-16 h-16 bg-purple-100 rounded-lg mb-4">
-                                <svg
-                                    className="w-8 h-8 text-purple-600"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                                    />
-                                </svg>
+                            <div className="absolute -right-4 -top-4 w-24 h-24 bg-purple-500/5 rounded-full group-hover:scale-150 transition-transform duration-500"></div>
+                            <div className="flex items-center justify-center w-14 h-14 bg-purple-500/10 rounded-xl mb-6 relative z-10">
+                                <span className="material-symbols-outlined text-purple-600 text-[28px]">engineering</span>
                             </div>
-                            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                            <h3 className="text-[18px] font-bold text-slate-900 mb-2 relative z-10">
                                 Izin Kerja
                             </h3>
-                            <p className="text-gray-600 text-sm">
-                                Surat Izin Kerja (SIK) untuk pekerjaan yang dilakukan di area mall
+                            <p className="text-slate-500 text-[13px] leading-relaxed flex-1 relative z-10">
+                                Surat Izin Kerja (SIK) untuk mengajukan perizinan pekerjaan, instalasi, atau perbaikan di area mall.
                             </p>
-                            <div className="mt-4 text-purple-600 text-sm font-medium">
-                                Pilih →
+                            <div className="mt-6 flex items-center gap-2 text-purple-600 text-[13px] font-bold relative z-10 group-hover:gap-3 transition-all">
+                                Buat Surat <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                             </div>
                         </Link>
                     </div>
 
                     {/* Info Box */}
-                    <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <div className="flex">
-                            <div className="flex-shrink-0">
-                                <svg
-                                    className="h-5 w-5 text-blue-400"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                >
-                                    <path
-                                        fillRule="evenodd"
-                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                                        clipRule="evenodd"
-                                    />
-                                </svg>
-                            </div>
-                            <div className="ml-3">
-                                <h3 className="text-sm font-medium text-blue-800">
-                                    Informasi
-                                </h3>
-                                <div className="mt-2 text-sm text-blue-700">
-                                    <ul className="list-disc list-inside space-y-1">
-                                        <li>
-                                            Pastikan data yang Anda isi sudah benar sebelum submit
-                                        </li>
-                                        <li>
-                                            Surat yang sudah disubmit akan masuk ke proses approval
-                                        </li>
-                                        <li>
-                                            Anda bisa membatalkan surat yang masih dalam proses approval
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
+                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-6 flex gap-4 items-start">
+                        <div className="flex-shrink-0">
+                            <span className="material-symbols-outlined text-primary text-[24px]">info</span>
+                        </div>
+                        <div>
+                            <h3 className="text-[14px] font-bold text-primary mb-2">
+                                Informasi Pengajuan Surat
+                            </h3>
+                            <ul className="text-[13px] text-slate-600 space-y-2 list-none p-0">
+                                <li className="flex items-start gap-2">
+                                    <span className="material-symbols-outlined text-[16px] text-primary/50 mt-0.5">check_circle</span>
+                                    Pastikan data yang Anda isi sudah benar dan lengkap sebelum menekan tombol submit.
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="material-symbols-outlined text-[16px] text-primary/50 mt-0.5">check_circle</span>
+                                    Surat yang disubmit akan langsung masuk ke antrean proses approval oleh tim internal mall.
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="material-symbols-outlined text-[16px] text-primary/50 mt-0.5">check_circle</span>
+                                    Anda dapat membatalkan surat kapan saja selama statusnya masih dalam proses approval.
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>

@@ -7,6 +7,7 @@ use App\Http\Requests\Vendor\SubmitSikmRequest;
 use App\Http\Requests\Vendor\SubmitSikRequest;
 use App\Services\RequestService;
 use App\Services\QrCodeService;
+use App\Services\StorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -45,11 +46,13 @@ class RequestController extends Controller
 {
     protected $requestService;
     protected $qrCodeService;
+    protected $storageService;
 
-    public function __construct(RequestService $requestService, QrCodeService $qrCodeService)
+    public function __construct(RequestService $requestService, QrCodeService $qrCodeService, StorageService $storageService)
     {
         $this->requestService = $requestService;
         $this->qrCodeService = $qrCodeService;
+        $this->storageService = $storageService;
     }
 
     /**
@@ -591,6 +594,7 @@ class RequestController extends Controller
                 'request' => $request,
                 'vendor' => $vendor,
                 'qrCodeUrl' => $qrCodeUrl,
+                'formImageUrl' => $request->original_form_image ? $this->storageService->getFileUrl($request->original_form_image) : null,
             ]);
 
         } catch (\Exception $e) {

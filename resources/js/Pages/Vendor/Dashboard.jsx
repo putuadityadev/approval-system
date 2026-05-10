@@ -23,6 +23,7 @@ import UploadScanModal from '@/Components/shared/UploadScanModal';
 
 function VendorDashboard({ auth, statistics, recentRequests }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
+
     /**
      * getStatusBadge
      *
@@ -42,11 +43,10 @@ function VendorDashboard({ auth, statistics, recentRequests }) {
             'REJECTED': { label: 'Ditolak', color: 'bg-red-100 text-red-800' },
             'CANCELLED': { label: 'Dibatalkan', color: 'bg-gray-100 text-gray-800' },
         };
-
         const config = statusConfig[status] || { label: status, color: 'bg-gray-100 text-gray-800' };
 
         return (
-            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${config.color}`}>
+            <span className={`inline-flex items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm ${config.color}`}>
                 {config.label}
             </span>
         );
@@ -72,7 +72,7 @@ function VendorDashboard({ auth, statistics, recentRequests }) {
     /**
      * formatDate
      *
-     * Format tanggal ke format Indonesia (DD/MM/YYYY HH:mm).
+     * Format tanggal ke format Indonesia (DD MMM YYYY).
      *
      * @param {string} dateString — ISO date string
      * @return {string} — Formatted date
@@ -80,254 +80,138 @@ function VendorDashboard({ auth, statistics, recentRequests }) {
     const formatDate = (dateString) => {
         const date = new Date(dateString);
         const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const month = date.toLocaleString('id-ID', { month: 'short' });
         const year = date.getFullYear();
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        return `${day}/${month}/${year} ${hours}:${minutes}`;
+        return `${day} ${month} ${year}`;
     };
 
     return (
         <AuthenticatedLayout auth={auth}>
-            <div className="py-12">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    {/* Header */}
-                    <div className="mb-8">
-                        <h2 className="text-3xl font-bold text-gray-900">
-                            Dashboard Vendor
-                        </h2>
-                        <p className="text-gray-600 mt-2">
-                            Selamat datang, <span className="font-semibold">{auth.user.vendor?.company_name || auth.user.email}</span>
-                        </p>
+            <div className="py-8">
+                <div className="max-w-7xl mx-auto space-y-8">
+                    {/* Page Header */}
+                    <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                        <div>
+                            <h2 className="text-[30px] font-extrabold text-foreground tracking-tight">Dashboard Overview</h2>
+                            <p className="text-[14px] font-medium text-muted-foreground mt-1">
+                                Selamat datang, {auth.user.vendor?.company_name || auth.user.email}. Monitor metrik operasional dan pengajuan Anda.
+                            </p>
+                        </div>
+                        <Button 
+                            variant="primary" 
+                            className="bg-primary text-primary-foreground font-bold py-2 px-4 rounded hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 flex items-center gap-2 justify-center"
+                            onClick={() => setIsModalOpen(true)}
+                        >
+                            <span className="material-symbols-outlined text-[20px]">add</span>
+                            Buat Surat Baru
+                        </Button>
                     </div>
 
-                    {/* Statistics Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    {/* Bento Grid for Metrics */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {/* Pending Card */}
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                            <div className="p-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-600">Pending</p>
-                                        <p className="text-3xl font-bold text-yellow-600 mt-2">
-                                            {statistics.pending}
-                                        </p>
-                                    </div>
-                                    <div className="p-3 bg-yellow-100 rounded-full">
-                                        <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-2">Menunggu approval</p>
+                        <div className="bg-card rounded-lg p-6 shadow-sm border border-border/50 hover:shadow-md transition-all">
+                            <div className="flex justify-between items-start mb-4">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Pending</span>
+                                <span className="material-symbols-outlined text-yellow-600" style={{fontVariationSettings: "'FILL' 1"}}>schedule</span>
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-[36px] font-black text-card-foreground tracking-tight">{statistics.pending}</span>
+                                <span className="text-[12px] font-medium text-muted-foreground">Menunggu approval</span>
                             </div>
                         </div>
 
                         {/* Approved Card */}
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                            <div className="p-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-600">Disetujui</p>
-                                        <p className="text-3xl font-bold text-green-600 mt-2">
-                                            {statistics.approved}
-                                        </p>
-                                    </div>
-                                    <div className="p-3 bg-green-100 rounded-full">
-                                        <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-2">Surat sudah disetujui</p>
+                        <div className="bg-card rounded-lg p-6 shadow-sm border border-border/50 hover:shadow-md transition-all">
+                            <div className="flex justify-between items-start mb-4">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Disetujui</span>
+                                <span className="material-symbols-outlined text-green-600" style={{fontVariationSettings: "'FILL' 1"}}>check_circle</span>
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-[36px] font-black text-card-foreground tracking-tight">{statistics.approved}</span>
+                                <span className="text-[12px] font-medium text-muted-foreground">Surat disetujui</span>
                             </div>
                         </div>
 
                         {/* Rejected Card */}
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                            <div className="p-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-600">Ditolak</p>
-                                        <p className="text-3xl font-bold text-red-600 mt-2">
-                                            {statistics.rejected}
-                                        </p>
-                                    </div>
-                                    <div className="p-3 bg-red-100 rounded-full">
-                                        <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-2">Surat ditolak</p>
+                        <div className="bg-card rounded-lg p-6 shadow-sm border border-border/50 hover:shadow-md transition-all">
+                            <div className="flex justify-between items-start mb-4">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Ditolak</span>
+                                <span className="material-symbols-outlined text-red-600" style={{fontVariationSettings: "'FILL' 1"}}>cancel</span>
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-[36px] font-black text-card-foreground tracking-tight">{statistics.rejected}</span>
+                                <span className="text-[12px] font-medium text-muted-foreground">Perlu perbaikan</span>
                             </div>
                         </div>
 
                         {/* Total Card */}
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                            <div className="p-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-600">Total Surat</p>
-                                        <p className="text-3xl font-bold text-blue-600 mt-2">
-                                            {statistics.total}
-                                        </p>
-                                    </div>
-                                    <div className="p-3 bg-blue-100 rounded-full">
-                                        <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-2">Semua pengajuan</p>
+                        <div className="bg-card rounded-lg p-6 shadow-sm border border-border/50 hover:shadow-md transition-all">
+                            <div className="flex justify-between items-start mb-4">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total Surat</span>
+                                <span className="material-symbols-outlined text-primary" style={{fontVariationSettings: "'FILL' 1"}}>assignment</span>
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-[36px] font-black text-card-foreground tracking-tight">{statistics.total}</span>
+                                <span className="text-[12px] font-medium text-muted-foreground">Semua pengajuan</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Quick Actions */}
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-8">
-                        <div className="p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-                            <div className="flex flex-wrap gap-4">
-                                <Button 
-                                    variant="primary" 
-                                    className="flex items-center gap-2"
-                                    onClick={() => setIsModalOpen(true)}
-                                >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                    </svg>
-                                    Buat Surat Baru
-                                </Button>
-                                <Link href={route('vendor.requests.index')}>
-                                    <Button variant="secondary" className="flex items-center gap-2">
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                        Lihat Semua Surat
-                                    </Button>
+                    {/* Recent Activity Table */}
+                    <div className="bg-card rounded-lg shadow-sm border border-border/50 overflow-hidden">
+                        <div className="px-6 py-5 border-b border-border flex justify-between items-center bg-background">
+                            <h3 className="text-[20px] font-bold text-card-foreground">Pengajuan Terbaru</h3>
+                            {recentRequests.length > 0 && (
+                                <Link href={route('vendor.requests.index')} className="text-[12px] font-medium text-primary hover:underline focus:outline-none">
+                                    View All
                                 </Link>
-                            </div>
+                            )}
                         </div>
-                    </div>
-
-                    {/* Recent Submissions */}
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div className="p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-semibold text-gray-900">Pengajuan Terbaru</h3>
-                                {recentRequests.length > 0 && (
-                                    <Link href={route('vendor.requests.index')} className="text-sm text-blue-600 hover:text-blue-800">
-                                        Lihat Semua →
-                                    </Link>
-                                )}
-                            </div>
-
+                        
+                        <div className="overflow-x-auto">
                             {recentRequests.length === 0 ? (
-                                /* Empty State */
                                 <div className="text-center py-12">
-                                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                    <h3 className="mt-2 text-sm font-medium text-gray-900">Belum ada pengajuan</h3>
-                                    <p className="mt-1 text-sm text-gray-500">
-                                        Mulai dengan membuat surat pengajuan pertama Anda.
-                                    </p>
+                                    <span className="material-symbols-outlined text-4xl text-muted-foreground mb-2">inbox</span>
+                                    <h3 className="text-sm font-medium text-foreground">Belum ada pengajuan</h3>
+                                    <p className="mt-1 text-sm text-muted-foreground">Mulai dengan membuat surat pengajuan pertama Anda.</p>
                                     <div className="mt-6">
-                                        <Button 
-                                            variant="primary" 
-                                            className="flex items-center gap-2 mx-auto"
-                                            onClick={() => setIsModalOpen(true)}
-                                        >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                            </svg>
+                                        <Button variant="primary" onClick={() => setIsModalOpen(true)} className="flex items-center justify-center gap-2 mx-auto">
+                                            <span className="material-symbols-outlined text-[20px]">add</span>
                                             Buat Surat Baru
                                         </Button>
                                     </div>
                                 </div>
                             ) : (
-                                /* Table */
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    No. Dokumen
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Tipe
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Status
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Tanggal
-                                                </th>
-                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Aksi
-                                                </th>
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-background border-b border-border">
+                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">No. Dokumen</th>
+                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tipe</th>
+                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Tanggal</th>
+                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Status</th>
+                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="text-[14px] font-medium">
+                                        {recentRequests.map((request) => (
+                                            <tr key={request.id} className="border-b border-border/50 hover:bg-muted/50 transition-colors group">
+                                                <td className="px-6 py-4 text-muted-foreground font-bold text-[12px]">{request.document_serial_no}</td>
+                                                <td className="px-6 py-4 text-foreground">{getRequestTypeLabel(request.request_type)}</td>
+                                                <td className="px-6 py-4 text-muted-foreground text-[12px]">{formatDate(request.created_at)}</td>
+                                                <td className="px-6 py-4">{getStatusBadge(request.status)}</td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <Link href={route('vendor.requests.show', request.id)} className="text-muted-foreground hover:text-primary transition-colors focus:outline-none">
+                                                        <span className="material-symbols-outlined text-[20px]">visibility</span>
+                                                    </Link>
+                                                </td>
                                             </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                            {recentRequests.map((request) => (
-                                                <tr key={request.id} className="hover:bg-gray-50">
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                        {request.document_serial_no}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        {getRequestTypeLabel(request.request_type)}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        {getStatusBadge(request.status)}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        {formatDate(request.created_at)}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                        <Link
-                                                            href={route('vendor.requests.show', request.id)}
-                                                            className="text-blue-600 hover:text-blue-900"
-                                                        >
-                                                            Lihat Detail
-                                                        </Link>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                        ))}
+                                    </tbody>
+                                </table>
                             )}
                         </div>
                     </div>
-
-                    {/* Company Info Card */}
-                    {auth.user.vendor && (
-                        <div className="mt-8 bg-blue-50 overflow-hidden shadow-sm sm:rounded-lg">
-                            <div className="p-6">
-                                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                    </svg>
-                                    Informasi Perusahaan
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <p className="text-xs text-gray-600">Nama Perusahaan</p>
-                                        <p className="text-sm font-medium text-gray-900">{auth.user.vendor.company_name}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-600">PIC</p>
-                                        <p className="text-sm font-medium text-gray-900">{auth.user.vendor.pic_name}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-gray-600">Telepon</p>
-                                        <p className="text-sm font-medium text-gray-900">{auth.user.vendor.pic_phone}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
 
                     {/* Upload & Scan Modal */}
                     <UploadScanModal 
