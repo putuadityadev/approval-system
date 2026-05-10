@@ -1,14 +1,19 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import DocumentViewer from '@/Components/shared/DocumentViewer';
 
 export default function CreateSikmb({ vendor, requestType, ocrData = {}, uploadedFileName, previewUrl }) {
+    const { flash } = usePage().props;
     const formStorageKey = `sikmb_form_${requestType}_${uploadedFileName || 'draft'}`;
 
     const getInitialData = () => {
-        const savedData = localStorage.getItem(formStorageKey);
-        if (savedData) {
-            try { return JSON.parse(savedData); } catch (e) {}
+        // Abaikan cache localStorage jika baru saja berhasil scan (ada flash message)
+        // Ini memastikan hasil OCR terbaru selalu masuk
+        if (!flash?.success) {
+            const savedData = localStorage.getItem(formStorageKey);
+            if (savedData) {
+                try { return JSON.parse(savedData); } catch (e) {}
+            }
         }
         
         return {

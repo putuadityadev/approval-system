@@ -26,6 +26,13 @@ use Illuminate\Http\UploadedFile;
  */
 class OcrService
 {
+    protected ?AiOcrService $aiOcrService;
+
+    public function __construct(?AiOcrService $aiOcrService = null)
+    {
+        $this->aiOcrService = $aiOcrService;
+    }
+
     /**
      * Ekstrak data dari gambar surat SIKMB
      *
@@ -33,14 +40,13 @@ class OcrService
      * Ekstrak teks dari gambar surat SIKMB dan parse menjadi structured data
      *
      * Cara kerja:
-     * 1. Jalankan OCR pada gambar
-     * 2. Parse teks untuk field: document_serial_no, start_date, end_date, 
-     *    start_time, end_time, dest_address, dest_phone, items
+     * 1. Coba AI Vision API (akurasi tinggi untuk tulisan tangan)
+     * 2. Jika AI gagal atau tidak tersedia, fallback ke Tesseract + regex
      * 3. Return array data yang sudah di-parse
      *
      * @param UploadedFile $image — File gambar surat
      * @return array — Data hasil ekstraksi
-     * @throws \Exception — Jika OCR gagal
+     * @throws \Exception — Jika semua engine OCR gagal
      */
     public function extractSikmData(UploadedFile $image): array
     {
@@ -49,19 +55,42 @@ class OcrService
             'size' => $image->getSize(),
         ]);
 
+        // Strategy 1: AI Vision API (tulisan tangan + cetak)
+        if ($this->aiOcrService && $this->aiOcrService->isAvailable()) {
+            try {
+                $data = $this->aiOcrService->extractSikmData($image);
+                if ($data !== null) {
+                    Log::info('OCR_EXTRACT_SIKM_SUCCESS', [
+                        'engine' => 'ai',
+                        'fields_extracted' => array_keys($data),
+                        'items_count' => count($data['items'] ?? []),
+                    ]);
+                    return $data;
+                }
+                Log::warning('OCR_AI_RETURNED_NULL_SIKM', [
+                    'filename' => $image->getClientOriginalName(),
+                ]);
+            } catch (\Exception $e) {
+                Log::warning('OCR_AI_FALLBACK_SIKM', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // Strategy 2: Tesseract + regex (fallback)
         try {
-            // Ekstrak teks dari gambar
             $text = $this->performOcr($image);
 
             Log::info('OCR_EXTRACT_SIKM_TEXT_EXTRACTED', [
+                'engine' => 'tesseract',
                 'text_length' => strlen($text),
                 'text_preview' => substr($text, 0, 200),
             ]);
 
-            // Parse teks menjadi structured data
             $data = $this->parseSikmText($text);
 
             Log::info('OCR_EXTRACT_SIKM_SUCCESS', [
+                'engine' => 'tesseract',
                 'fields_extracted' => array_keys($data),
                 'items_count' => count($data['items'] ?? []),
             ]);
@@ -102,19 +131,41 @@ class OcrService
             'size' => $image->getSize(),
         ]);
 
+        // Strategy 1: AI Vision API
+        if ($this->aiOcrService && $this->aiOcrService->isAvailable()) {
+            try {
+                $data = $this->aiOcrService->extractSikData($image);
+                if ($data !== null) {
+                    Log::info('OCR_EXTRACT_SIK_SUCCESS', [
+                        'engine' => 'ai',
+                        'fields_extracted' => array_keys($data),
+                    ]);
+                    return $data;
+                }
+                Log::warning('OCR_AI_RETURNED_NULL_SIK', [
+                    'filename' => $image->getClientOriginalName(),
+                ]);
+            } catch (\Exception $e) {
+                Log::warning('OCR_AI_FALLBACK_SIK', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // Strategy 2: Tesseract + regex (fallback)
         try {
-            // Ekstrak teks dari gambar
             $text = $this->performOcr($image);
 
             Log::info('OCR_EXTRACT_SIK_TEXT_EXTRACTED', [
+                'engine' => 'tesseract',
                 'text_length' => strlen($text),
                 'text_preview' => substr($text, 0, 200),
             ]);
 
-            // Parse teks menjadi structured data
             $data = $this->parseSikText($text);
 
             Log::info('OCR_EXTRACT_SIK_SUCCESS', [
+                'engine' => 'tesseract',
                 'fields_extracted' => array_keys($data),
             ]);
 
