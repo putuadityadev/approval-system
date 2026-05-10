@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Request;
 use App\Models\ApprovalLog;
 use App\Services\Auth\AuditLogService;
+use App\Services\QrCodeService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -35,10 +36,12 @@ use Illuminate\Support\Facades\Auth;
 class ApprovalService
 {
     protected $auditLogService;
+    protected $qrCodeService;
 
-    public function __construct(AuditLogService $auditLogService)
+    public function __construct(AuditLogService $auditLogService, QrCodeService $qrCodeService)
     {
         $this->auditLogService = $auditLogService;
+        $this->qrCodeService = $qrCodeService;
     }
 
     /**
@@ -109,12 +112,25 @@ class ApprovalService
                 'approver_id' => $approver->id,
             ]);
 
-            // TODO: Jika status APPROVED, trigger QR code generation (Sprint 4)
+            // Jika status APPROVED, trigger QR code generation
             if ($nextStatus === 'APPROVED') {
-                Log::info('APPROVAL_FINAL_APPROVED', [
-                    'request_id' => $request->id,
-                    'message' => 'Request fully approved, ready for QR code generation',
-                ]);
+                try {
+                    $qrCodePath = $this->qrCodeService->generateQrCode($request->id);
+                    
+                    Log::info('APPROVAL_QR_CODE_GENERATED', [
+                        'request_id' => $request->id,
+                        'qr_code_path' => $qrCodePath,
+                        'message' => 'Request fully approved, QR code generated successfully',
+                    ]);
+                } catch (\Exception $e) {
+                    // QR generation failure tidak boleh mengganggu approval flow
+                    // Log error tapi tetap return success
+                    Log::error('APPROVAL_QR_CODE_GENERATION_FAILED', [
+                        'request_id' => $request->id,
+                        'error' => $e->getMessage(),
+                        'message' => 'Approval success but QR code generation failed',
+                    ]);
+                }
             }
 
             return $request->load(['approvalLogs.approver', 'vendor']);

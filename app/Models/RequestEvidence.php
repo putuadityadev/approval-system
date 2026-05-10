@@ -31,8 +31,8 @@ class RequestEvidence extends Model
      */
     protected $table = 'request_evidences';
 
-    // Disable updated_at karena evidence immutable
-    const UPDATED_AT = null;
+    // Disable timestamps karena evidence immutable dan pakai uploaded_at
+    public $timestamps = false;
 
     protected $fillable = [
         'request_id',

@@ -7,20 +7,23 @@ import { useState } from 'react';
  * Komponen ini digunakan untuk:
  * - Menampilkan detail lengkap surat (SIKMB atau SIK)
  * - Menampilkan approval history timeline
+ * - Menampilkan QR code jika status APPROVED atau EXECUTED
  * - Handle cancel request dengan modal confirmation
  *
  * Cara kerjanya:
  * 1. Menerima data request lengkap dari backend (dengan relationships)
  * 2. Menampilkan detail sesuai tipe surat (SIKMB atau SIK)
  * 3. Menampilkan timeline approval logs
- * 4. Jika status masih pending, tampilkan tombol cancel
- * 5. Modal confirmation untuk cancel dengan input alasan
+ * 4. Jika status APPROVED/EXECUTED, tampilkan QR code untuk security scan
+ * 5. Jika status masih pending, tampilkan tombol cancel
+ * 6. Modal confirmation untuk cancel dengan input alasan
  *
  * Props:
  * - request: objek request lengkap dengan relationships (vendor, sikmDetail, sikDetail, approvalLogs, evidences)
  * - vendor: objek vendor { id, company_name, pic_name, pic_phone, address }
+ * - qrCodeUrl: string (optional) — URL QR code jika sudah di-generate
  */
-export default function Detail({ request, vendor }) {
+export default function Detail({ request, vendor, qrCodeUrl }) {
     const [showCancelModal, setShowCancelModal] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm({
         reason: '',
@@ -437,7 +440,7 @@ export default function Detail({ request, vendor }) {
 
                         {/* Sidebar: Approval Timeline */}
                         <div className="lg:col-span-1">
-                            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-8">
+                            <div className="bg-white rounded-lg shadow-sm p-6 top-8">
                                 <h2 className="text-lg font-semibold text-gray-900 mb-4">
                                     Riwayat Approval
                                 </h2>
@@ -523,6 +526,65 @@ export default function Detail({ request, vendor }) {
                                     </ul>
                                 </div>
                             </div>
+
+                            {/* QR Code Section - Tampil jika status APPROVED atau EXECUTED */}
+                            {qrCodeUrl && (request.status === 'APPROVED' || request.status === 'EXECUTED') && (
+                                <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
+                                    <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                                        QR Code Surat
+                                    </h2>
+                                    <div className="space-y-4">
+                                        <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center">
+                                            <div className="bg-white p-4 rounded-lg shadow-sm">
+                                                <img
+                                                    src={qrCodeUrl}
+                                                    alt="QR Code Surat"
+                                                    className="w-48 h-48"
+                                                    onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.nextElementSibling.style.display = 'flex';
+                                                    }}
+                                                />
+                                                <div className="hidden flex-col items-center justify-center w-48 h-48 bg-gray-100 rounded">
+                                                    <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                                                    </svg>
+                                                    <p className="text-xs text-gray-500">Gagal memuat QR code</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                            <div className="flex items-start">
+                                                <svg className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                                </svg>
+                                                <div className="flex-1">
+                                                    <h3 className="text-sm font-medium text-blue-900 mb-1">
+                                                        Cara Menggunakan QR Code
+                                                    </h3>
+                                                    <ul className="text-xs text-blue-800 space-y-1">
+                                                        <li>• Tunjukkan QR code ini ke petugas security saat eksekusi surat</li>
+                                                        <li>• QR code valid selama 7 hari dari tanggal approval</li>
+                                                        <li>• Simpan screenshot QR code untuk backup</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <a
+                                            href={qrCodeUrl}
+                                            download={`QR_${request.document_serial_no}.svg`}
+                                            className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors text-sm font-medium"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                            </svg>
+                                            Download QR Code
+                                        </a>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

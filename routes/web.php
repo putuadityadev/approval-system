@@ -263,18 +263,29 @@ Route::middleware(['auth', 'active', 'role:approver_dept,approver_ops,approver_f
 Route::middleware(['auth', 'active', 'role:security'])->prefix('security')->name('security.')->group(function () {
     
     // Security Dashboard
-    Route::get('/dashboard', function () {
-        return Inertia::render('Security/Dashboard', [
-            'auth' => [
-                'user' => auth()->user(),
-            ],
-        ]);
-    })->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\Security\SecurityController::class, 'dashboard'])
+        ->name('dashboard');
 
-    // TODO: Tambahkan routes untuk fitur security lainnya di sini
-    // Contoh:
-    // - Scan QR code surat
-    // - View surat yang sudah di-scan
-    // - Record status masuk/keluar vendor
-    // - View history scan
+    // QR Scanner
+    Route::get('/scanner', [\App\Http\Controllers\Security\SecurityController::class, 'scanner'])
+        ->name('scanner');
+    
+    // Process QR Scan
+    Route::post('/scan', [\App\Http\Controllers\Security\SecurityController::class, 'scan'])
+        ->name('scan');
+    
+    // Process Scan by Document Serial Number (Manual Input untuk Testing)
+    Route::post('/scan-by-serial', [\App\Http\Controllers\Security\SecurityController::class, 'scanBySerial'])
+        ->name('scan.by.serial');
+    
+    // Request Management
+    Route::get('/requests', [\App\Http\Controllers\Security\SecurityController::class, 'index'])
+        ->name('requests.index');
+    
+    Route::get('/requests/{id}', [\App\Http\Controllers\Security\SecurityController::class, 'show'])
+        ->name('requests.show');
+    
+    // Upload Evidence Photos
+    Route::post('/requests/{id}/evidence', [\App\Http\Controllers\Security\SecurityController::class, 'uploadEvidence'])
+        ->name('requests.evidence');
 });

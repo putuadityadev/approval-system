@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Vendor\SubmitSikmRequest;
 use App\Http\Requests\Vendor\SubmitSikRequest;
 use App\Services\RequestService;
+use App\Services\QrCodeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -43,10 +44,12 @@ use Inertia\Inertia;
 class RequestController extends Controller
 {
     protected $requestService;
+    protected $qrCodeService;
 
-    public function __construct(RequestService $requestService)
+    public function __construct(RequestService $requestService, QrCodeService $qrCodeService)
     {
         $this->requestService = $requestService;
+        $this->qrCodeService = $qrCodeService;
     }
 
     /**
@@ -578,9 +581,16 @@ class RequestController extends Controller
                     ->with('error', 'Anda tidak memiliki akses ke surat ini.');
             }
 
+            // Generate QR code URL jika status APPROVED atau EXECUTED
+            $qrCodeUrl = null;
+            if (in_array($request->status, ['APPROVED', 'EXECUTED'])) {
+                $qrCodeUrl = $this->qrCodeService->getQrCodeUrl($id);
+            }
+
             return Inertia::render('Vendor/Requests/Detail', [
                 'request' => $request,
                 'vendor' => $vendor,
+                'qrCodeUrl' => $qrCodeUrl,
             ]);
 
         } catch (\Exception $e) {
