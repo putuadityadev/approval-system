@@ -207,9 +207,11 @@ Route::middleware(['auth', 'active', 'role:vendor'])->prefix('vendor')->name('ve
     Route::post('/requests/sik', [\App\Http\Controllers\Vendor\RequestController::class, 'storeSik'])
         ->name('requests.store.sik');
     
-    // Request Detail & Actions
+    // Request Detail, Tracking & Actions
     Route::get('/requests/{id}', [\App\Http\Controllers\Vendor\RequestController::class, 'show'])
         ->name('requests.show');
+    Route::get('/requests/{id}/tracking', [\App\Http\Controllers\Vendor\RequestController::class, 'tracking'])
+        ->name('requests.tracking');
     Route::post('/requests/{id}/cancel', [\App\Http\Controllers\Vendor\RequestController::class, 'cancel'])
         ->name('requests.cancel');
     
@@ -255,6 +257,12 @@ Route::middleware(['auth', 'active', 'role:approver_dept,approver_ops,approver_f
     // Approval History
     Route::get('/history', [\App\Http\Controllers\Approver\ApprovalController::class, 'history'])
         ->name('history');
+
+    // Profile Routes
+    Route::get('/profile', [\App\Http\Controllers\Approver\ProfileController::class, 'index'])
+        ->name('profile.index');
+    Route::post('/profile/password', [\App\Http\Controllers\Approver\ProfileController::class, 'updatePassword'])
+        ->name('profile.password.update');
 });
 
 /*

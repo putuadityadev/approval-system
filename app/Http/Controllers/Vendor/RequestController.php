@@ -652,4 +652,46 @@ class RequestController extends Controller
             ]);
         }
     }
+
+    /**
+     * Get tracking details for a request (JSON)
+     *
+     * GET /vendor/requests/{id}/tracking
+     */
+    public function tracking($id)
+    {
+        try {
+            $vendor = Auth::user()->vendor;
+            $requestModel = \App\Models\Request::with(['approvalLogs.approver'])->findOrFail($id);
+
+            if ($requestModel->vendor_id !== $vendor->id) {
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
+
+            // Determine pending approvers based on current status
+            $pendingRole = match($requestModel->status) {
+                'SUBMITTED', 'PENDING_DEPT' => 'approver_dept',
+                'PENDING_OPS' => 'approver_ops',
+                'PENDING_FINANCE' => 'approver_finance',
+                'PENDING_GM' => 'approver_gm',
+                default => null
+            };
+
+            $pendingApprovers = [];
+            if ($pendingRole) {
+                $pendingApprovers = \App\Models\User::where('role', $pendingRole)
+                    ->where('is_active', true)
+                    ->get(['id', 'email', 'role']);
+            }
+
+            return response()->json([
+                'request' => $requestModel,
+                'approval_logs' => $requestModel->approvalLogs,
+                'pending_approvers' => $pendingApprovers
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Request not found'], 404);
+        }
+    }
 }

@@ -20,9 +20,12 @@ import { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Button from '@/Components/ui/Button';
 import UploadScanModal from '@/Components/shared/UploadScanModal';
+import ApprovalTrackingModal from '@/Components/shared/ApprovalTrackingModal';
 
 function VendorDashboard({ auth, statistics, recentRequests }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [trackingModalOpen, setTrackingModalOpen] = useState(false);
+    const [selectedRequestId, setSelectedRequestId] = useState(null);
 
     /**
      * getStatusBadge
@@ -200,8 +203,15 @@ function VendorDashboard({ auth, statistics, recentRequests }) {
                                                 <td className="px-6 py-4 text-foreground">{getRequestTypeLabel(request.request_type)}</td>
                                                 <td className="px-6 py-4 text-muted-foreground text-[12px]">{formatDate(request.created_at)}</td>
                                                 <td className="px-6 py-4">{getStatusBadge(request.status)}</td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <Link href={route('vendor.requests.show', request.id)} className="text-muted-foreground hover:text-primary transition-colors focus:outline-none">
+                                                <td className="px-6 py-4 text-right flex items-center justify-end gap-3">
+                                                    <button 
+                                                        onClick={() => { setSelectedRequestId(request.id); setTrackingModalOpen(true); }} 
+                                                        className="text-muted-foreground hover:text-primary transition-colors focus:outline-none flex items-center gap-1"
+                                                        title="Tracking Approval"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[20px]">timeline</span>
+                                                    </button>
+                                                    <Link href={route('vendor.requests.show', request.id)} className="text-muted-foreground hover:text-primary transition-colors focus:outline-none flex items-center gap-1" title="Detail Surat">
                                                         <span className="material-symbols-outlined text-[20px]">visibility</span>
                                                     </Link>
                                                 </td>
@@ -217,6 +227,13 @@ function VendorDashboard({ auth, statistics, recentRequests }) {
                     <UploadScanModal 
                         isOpen={isModalOpen}
                         onClose={() => setIsModalOpen(false)}
+                    />
+
+                    {/* Tracking Modal */}
+                    <ApprovalTrackingModal 
+                        isOpen={trackingModalOpen}
+                        onClose={() => setTrackingModalOpen(false)}
+                        requestId={selectedRequestId}
                     />
                 </div>
             </div>

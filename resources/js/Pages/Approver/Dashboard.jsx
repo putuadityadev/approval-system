@@ -1,37 +1,21 @@
-/**
- * Approver Dashboard
- *
- * Halaman dashboard untuk Approver (Department, Operations, Finance, GM).
- *
- * Cara kerja:
- * 1. Menampilkan statistics cards (pending, approved, rejected)
- * 2. Quick actions untuk akses pending requests & history
- * 3. Recent activity (approval logs terbaru)
- *
- * Props:
- * - auth: object — data user yang sedang login { user: {...} }
- * - roleLabel: string — label role yang friendly (Department, Operations, Finance, GM)
- * - stats: object — statistics { pending, approved, rejected, total }
- * - recentApprovals: array — approval logs terbaru (max 5)
- */
-
 import { Link } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import Button from '@/Components/ui/Button';
 
-function ApproverDashboard({ auth, roleLabel, stats, recentApprovals }) {
+export default function ApproverDashboard({ auth, roleLabel, stats, recentApprovals }) {
     /**
      * formatDate
      *
-     * Format tanggal ke format Indonesia (DD/MM/YYYY HH:mm).
+     * Format tanggal ke format Indonesia (DD MMM YYYY HH:mm).
      */
     const formatDate = (dateString) => {
         const date = new Date(dateString);
         const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const month = date.toLocaleString('id-ID', { month: 'short' });
         const year = date.getFullYear();
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
-        return `${day}/${month}/${year} ${hours}:${minutes}`;
+        return `${day} ${month} ${year} ${hours}:${minutes}`;
     };
 
     /**
@@ -40,226 +24,162 @@ function ApproverDashboard({ auth, roleLabel, stats, recentApprovals }) {
     const getActionBadge = (action) => {
         if (action === 'APPROVED') {
             return (
-                <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                <span className="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm bg-green-100 text-green-800">
                     Disetujui
                 </span>
             );
         } else if (action === 'REJECTED') {
             return (
-                <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                <span className="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm bg-red-100 text-red-800">
                     Ditolak
                 </span>
             );
         }
-        return null;
+        return (
+            <span className="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm bg-gray-100 text-gray-800">
+                {action}
+            </span>
+        );
     };
 
     return (
         <AuthenticatedLayout auth={auth}>
-            <div className="py-12">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    {/* Header */}
-                    <div className="mb-8">
-                        <h2 className="text-3xl font-bold text-gray-900">
-                            Dashboard Approval - {roleLabel}
-                        </h2>
-                        <p className="text-gray-600 mt-2">
-                            Selamat datang, <span className="font-semibold">{auth.user.email}</span>
-                        </p>
+            <div className="py-8">
+                <div className="max-w-7xl mx-auto space-y-8">
+                    {/* Page Header */}
+                    <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                        <div>
+                            <h2 className="text-[30px] font-extrabold text-foreground tracking-tight">Dashboard {roleLabel}</h2>
+                            <p className="text-[14px] font-medium text-muted-foreground mt-1">
+                                Selamat datang, <span className="font-bold">{auth.user.email}</span>. Pantau dan review pengajuan yang menunggu persetujuan Anda.
+                            </p>
+                        </div>
+                        <Link href={route('approver.requests.index')}>
+                            <Button 
+                                variant="primary" 
+                                className="bg-primary text-primary-foreground font-bold py-2 px-4 rounded hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 flex items-center gap-2 justify-center"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">pending_actions</span>
+                                Review Pending
+                            </Button>
+                        </Link>
                     </div>
 
-                    {/* Statistics Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    {/* Bento Grid for Metrics */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {/* Pending Card */}
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg border-l-4 border-yellow-500">
-                            <div className="p-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-600">Pending</p>
-                                        <p className="text-3xl font-bold text-gray-900 mt-2">
-                                            {stats?.pending || 0}
-                                        </p>
-                                    </div>
-                                    <div className="p-3 bg-yellow-100 rounded-full">
-                                        <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-2">Menunggu approval Anda</p>
+                        <div className="bg-card rounded-lg p-6 shadow-sm border border-border/50 hover:shadow-md transition-all group">
+                            <div className="flex justify-between items-start mb-4">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Pending</span>
+                                <span className="material-symbols-outlined text-yellow-600 transition-transform group-hover:scale-110" style={{fontVariationSettings: "'FILL' 1"}}>schedule</span>
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-[36px] font-black text-card-foreground tracking-tight">{stats?.pending || 0}</span>
+                                <span className="text-[12px] font-medium text-muted-foreground">Menunggu review</span>
                             </div>
                         </div>
 
                         {/* Approved Card */}
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg border-l-4 border-green-500">
-                            <div className="p-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-600">Disetujui</p>
-                                        <p className="text-3xl font-bold text-gray-900 mt-2">
-                                            {stats?.approved || 0}
-                                        </p>
-                                    </div>
-                                    <div className="p-3 bg-green-100 rounded-full">
-                                        <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-2">Total yang Anda setujui</p>
+                        <div className="bg-card rounded-lg p-6 shadow-sm border border-border/50 hover:shadow-md transition-all group">
+                            <div className="flex justify-between items-start mb-4">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Disetujui</span>
+                                <span className="material-symbols-outlined text-green-600 transition-transform group-hover:scale-110" style={{fontVariationSettings: "'FILL' 1"}}>check_circle</span>
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-[36px] font-black text-card-foreground tracking-tight">{stats?.approved || 0}</span>
+                                <span className="text-[12px] font-medium text-muted-foreground">Total disetujui</span>
                             </div>
                         </div>
 
                         {/* Rejected Card */}
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg border-l-4 border-red-500">
-                            <div className="p-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-600">Ditolak</p>
-                                        <p className="text-3xl font-bold text-gray-900 mt-2">
-                                            {stats?.rejected || 0}
-                                        </p>
-                                    </div>
-                                    <div className="p-3 bg-red-100 rounded-full">
-                                        <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-2">Total yang Anda tolak</p>
+                        <div className="bg-card rounded-lg p-6 shadow-sm border border-border/50 hover:shadow-md transition-all group">
+                            <div className="flex justify-between items-start mb-4">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Ditolak</span>
+                                <span className="material-symbols-outlined text-red-600 transition-transform group-hover:scale-110" style={{fontVariationSettings: "'FILL' 1"}}>cancel</span>
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-[36px] font-black text-card-foreground tracking-tight">{stats?.rejected || 0}</span>
+                                <span className="text-[12px] font-medium text-muted-foreground">Total ditolak</span>
                             </div>
                         </div>
 
                         {/* Total Card */}
-                        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg border-l-4 border-blue-500">
-                            <div className="p-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-600">Total</p>
-                                        <p className="text-3xl font-bold text-gray-900 mt-2">
-                                            {stats?.total || 0}
-                                        </p>
-                                    </div>
-                                    <div className="p-3 bg-blue-100 rounded-full">
-                                        <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-2">Total approval Anda</p>
+                        <div className="bg-card rounded-lg p-6 shadow-sm border border-border/50 hover:shadow-md transition-all group">
+                            <div className="flex justify-between items-start mb-4">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total Surat</span>
+                                <span className="material-symbols-outlined text-primary transition-transform group-hover:scale-110" style={{fontVariationSettings: "'FILL' 1"}}>assignment</span>
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-[36px] font-black text-card-foreground tracking-tight">{stats?.total || 0}</span>
+                                <span className="text-[12px] font-medium text-muted-foreground">Semua diproses</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Quick Actions */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        {/* Pending Requests Card */}
-                        <Link href={route('approver.requests.index')}>
-                            <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg hover:shadow-md transition-shadow cursor-pointer">
-                                <div className="p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-gray-900">Pending Requests</h3>
-                                            <p className="text-sm text-gray-600 mt-1">
-                                                Review dan approve surat yang menunggu
-                                            </p>
-                                        </div>
-                                        <div className="p-3 bg-yellow-100 rounded-full">
-                                            <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <div className="mt-4 flex items-center text-blue-600 font-medium">
-                                        <span>Lihat Semua</span>
-                                        <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-                        </Link>
-
-                        {/* History Card */}
-                        <Link href={route('approver.history')}>
-                            <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg hover:shadow-md transition-shadow cursor-pointer">
-                                <div className="p-6">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-gray-900">Approval History</h3>
-                                            <p className="text-sm text-gray-600 mt-1">
-                                                Lihat riwayat approval yang sudah dilakukan
-                                            </p>
-                                        </div>
-                                        <div className="p-3 bg-blue-100 rounded-full">
-                                            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <div className="mt-4 flex items-center text-blue-600 font-medium">
-                                        <span>Lihat Semua</span>
-                                        <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-                        </Link>
-                    </div>
-
-                    {/* Recent Activity */}
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div className="p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Aktivitas Terbaru</h3>
-                            
+                    {/* Recent Activity Table */}
+                    <div className="bg-card rounded-lg shadow-sm border border-border/50 overflow-hidden">
+                        <div className="px-6 py-5 border-b border-border flex justify-between items-center bg-background">
+                            <h3 className="text-[20px] font-bold text-card-foreground">Aktivitas Terbaru</h3>
+                            {recentApprovals && recentApprovals.length > 0 && (
+                                <Link href={route('approver.history')} className="text-[12px] font-medium text-primary hover:underline focus:outline-none flex items-center gap-1">
+                                    Lihat Riwayat <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                                </Link>
+                            )}
+                        </div>
+                        
+                        <div className="overflow-x-auto">
                             {!recentApprovals || recentApprovals.length === 0 ? (
-                                <div className="text-center py-8">
-                                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                    </svg>
-                                    <p className="mt-2 text-sm text-gray-500">Belum ada aktivitas approval</p>
+                                <div className="text-center py-12">
+                                    <span className="material-symbols-outlined text-4xl text-muted-foreground mb-2">history</span>
+                                    <h3 className="text-sm font-medium text-foreground">Belum ada aktivitas</h3>
+                                    <p className="mt-1 text-sm text-muted-foreground">Anda belum melakukan approval surat apapun.</p>
                                 </div>
                             ) : (
-                                <div className="space-y-4">
-                                    {recentApprovals.map((approval) => (
-                                        <div key={approval.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-3">
-                                                    <div>
-                                                        {getActionBadge(approval.action)}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-medium text-gray-900">
-                                                            {approval.request?.document_serial_no || '-'}
-                                                        </p>
-                                                        <p className="text-xs text-gray-500">
-                                                            {approval.request?.vendor?.company_name || '-'}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                {approval.notes && (
-                                                    <p className="text-xs text-gray-600 mt-2 italic">
-                                                        "{approval.notes}"
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <div className="text-right ml-4">
-                                                <p className="text-xs text-gray-500">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-background border-b border-border">
+                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">No. Dokumen</th>
+                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Vendor</th>
+                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Status / Aksi</th>
+                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Catatan</th>
+                                            <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-right">Tanggal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="text-[14px] font-medium">
+                                        {recentApprovals.map((approval) => (
+                                            <tr key={approval.id} className="border-b border-border/50 hover:bg-muted/50 transition-colors group">
+                                                <td className="px-6 py-4">
+                                                    {approval.request ? (
+                                                        <Link href={route('approver.requests.show', approval.request.id)} className="text-primary hover:underline font-bold text-[12px] flex items-center gap-1">
+                                                            {approval.request.document_serial_no || 'Draft'}
+                                                            <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                                                        </Link>
+                                                    ) : (
+                                                        <span className="text-muted-foreground font-bold text-[12px]">-</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 text-foreground">
+                                                    {approval.request?.vendor?.company_name || '-'}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {getActionBadge(approval.action)}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {approval.notes ? (
+                                                        <span className="text-muted-foreground italic text-[13px] line-clamp-1 max-w-[200px]" title={approval.notes}>
+                                                            "{approval.notes}"
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-muted-foreground/50 text-[13px]">-</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 text-right text-muted-foreground text-[12px]">
                                                     {formatDate(approval.action_date)}
-                                                </p>
-                                                {approval.request && (
-                                                    <Link
-                                                        href={route('approver.requests.show', approval.request.id)}
-                                                        className="text-xs text-blue-600 hover:text-blue-900 mt-1 inline-block"
-                                                    >
-                                                        Lihat Detail →
-                                                    </Link>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             )}
                         </div>
                     </div>
@@ -268,5 +188,3 @@ function ApproverDashboard({ auth, roleLabel, stats, recentApprovals }) {
         </AuthenticatedLayout>
     );
 }
-
-export default ApproverDashboard;

@@ -84,6 +84,9 @@ function AuthenticatedLayout({ auth, children }) {
         if (['approver_dept', 'approver_ops', 'approver_finance', 'approver_gm'].includes(role)) {
             return [
                 { name: 'Dashboard', href: '/approver/dashboard', icon: 'dashboard' },
+                { name: 'Pending Request', href: '/approver/requests', icon: 'pending_actions' },
+                { name: 'Approval History', href: '/approver/history', icon: 'history' },
+                { name: 'My Profile', href: '/approver/profile', icon: 'person' },
             ];
         }
 

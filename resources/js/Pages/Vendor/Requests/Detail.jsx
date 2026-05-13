@@ -57,16 +57,30 @@ export default function Detail({ request, vendor, qrCodeUrl, formImageUrl }) {
 
     // Stepper logic
     const flowSteps = [
-        { key: 'SUBMITTED', label: 'Submitted', past: ['PENDING_DEPT', 'PENDING_OPS', 'PENDING_FINANCE', 'PENDING_GM', 'APPROVED', 'EXECUTED'] },
-        { key: 'PENDING_DEPT', label: 'Dept. Review', past: ['PENDING_OPS', 'PENDING_FINANCE', 'PENDING_GM', 'APPROVED', 'EXECUTED'] },
-        { key: 'PENDING_OPS', label: 'Operational', past: ['PENDING_FINANCE', 'PENDING_GM', 'APPROVED', 'EXECUTED'] },
-        { key: 'PENDING_FINANCE', label: 'Finance', past: ['PENDING_GM', 'APPROVED', 'EXECUTED'] },
-        { key: 'PENDING_GM', label: 'GM Approval', past: ['APPROVED', 'EXECUTED'] },
+        { key: 'SUBMITTED', label: 'Submitted', role: 'vendor', past: ['PENDING_DEPT', 'PENDING_OPS', 'PENDING_FINANCE', 'PENDING_GM', 'APPROVED', 'EXECUTED'] },
+        { key: 'PENDING_DEPT', label: 'Dept. Review', role: 'approver_dept', past: ['PENDING_OPS', 'PENDING_FINANCE', 'PENDING_GM', 'APPROVED', 'EXECUTED'] },
+        { key: 'PENDING_OPS', label: 'Operational', role: 'approver_ops', past: ['PENDING_FINANCE', 'PENDING_GM', 'APPROVED', 'EXECUTED'] },
+        { key: 'PENDING_FINANCE', label: 'Finance', role: 'approver_finance', past: ['PENDING_GM', 'APPROVED', 'EXECUTED'] },
+        { key: 'PENDING_GM', label: 'GM Approval', role: 'approver_gm', past: ['APPROVED', 'EXECUTED'] },
     ];
 
-    const getStepState = (step, index) => {
-        if (request.status === 'REJECTED' || request.status === 'CANCELLED') {
-            return 'rejected';
+    const getStepState = (step) => {
+        if (request.status === 'SUBMITTED') {
+            if (step.key === 'SUBMITTED') return 'completed';
+            if (step.key === 'PENDING_DEPT') return 'active';
+            return 'pending';
+        }
+        if (request.status === 'REJECTED') {
+            const log = request.approval_logs?.find(l => l.approver?.role === step.role);
+            if (log && log.action === 'REJECTED') return 'rejected';
+            const approvedLog = request.approval_logs?.find(l => l.approver?.role === step.role);
+            if (approvedLog && approvedLog.action === 'APPROVED') return 'completed';
+            if (step.key === 'SUBMITTED') return 'completed';
+            return 'pending';
+        }
+        if (request.status === 'CANCELLED') {
+            if (step.key === 'SUBMITTED') return 'rejected';
+            return 'pending';
         }
         if (request.status === 'APPROVED' || request.status === 'EXECUTED') {
             return 'completed';
@@ -186,6 +200,18 @@ export default function Detail({ request, vendor, qrCodeUrl, formImageUrl }) {
                                                 <p className="text-[14px] font-medium text-slate-900">{request.sop_form_code}</p>
                                             </div>
                                         )}
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Nama PIC</p>
+                                            <p className="text-[14px] font-medium text-slate-900">{request.vendor?.pic_name || '-'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Email Pengaju</p>
+                                            <p className="text-[14px] font-medium text-slate-900">{request.vendor?.user?.email || '-'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">No. Handphone PIC</p>
+                                            <p className="text-[14px] font-medium text-slate-900">{request.vendor?.pic_phone || '-'}</p>
+                                        </div>
                                     </div>
                                     <div className="space-y-4">
                                         <div>
