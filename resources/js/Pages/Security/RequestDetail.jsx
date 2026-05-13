@@ -1,37 +1,29 @@
+import { useState } from 'react';
+import { Link, useForm } from '@inertiajs/react';
+import SecurityMobileLayout from '@/Layouts/SecurityMobileLayout';
+
 /**
  * Security Request Detail
  *
  * Halaman detail request setelah QR scan dengan upload evidence.
- *
- * Props:
- * - auth: object — data user yang sedang login
- * - request: object — detail request dengan relasi lengkap
- * - qrCodeUrl: string — URL QR code image
- * - formImageUrl: string — URL preview surat original
- * - hasEvidence: boolean — apakah sudah ada evidence
+ * Menggunakan mobile-first design.
  */
-
-import { useState } from 'react';
-import { Link, useForm } from '@inertiajs/react';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import Button from '@/Components/ui/Button';
-import ValidationErrors from '@/Components/shared/ValidationErrors';
-
-function RequestDetail({ auth, request, qrCodeUrl, formImageUrl, hasEvidence }) {
+export default function RequestDetail({ auth, request, qrCodeUrl, formImageUrl, hasEvidence }) {
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [previewUrls, setPreviewUrls] = useState([]);
+
+    const formatTime = (dateString) => {
+        return new Date(dateString).toLocaleTimeString('en-US', {
+            hour: '2-digit', minute: '2-digit', hour12: false
+        });
+    };
 
     const { data, setData, post, processing, errors } = useForm({
         photos: [],
     });
 
-    /**
-     * Handle file selection
-     */
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
-        
-        // Validate max 5 files
         if (files.length > 5) {
             alert('Maksimal 5 foto evidence');
             return;
@@ -40,14 +32,10 @@ function RequestDetail({ auth, request, qrCodeUrl, formImageUrl, hasEvidence }) 
         setSelectedFiles(files);
         setData('photos', files);
 
-        // Generate preview URLs
         const urls = files.map(file => URL.createObjectURL(file));
         setPreviewUrls(urls);
     };
 
-    /**
-     * Remove selected file
-     */
     const removeFile = (index) => {
         const newFiles = selectedFiles.filter((_, i) => i !== index);
         const newUrls = previewUrls.filter((_, i) => i !== index);
@@ -57,315 +45,185 @@ function RequestDetail({ auth, request, qrCodeUrl, formImageUrl, hasEvidence }) 
         setData('photos', newFiles);
     };
 
-    /**
-     * Submit evidence photos
-     */
     const handleSubmit = (e) => {
         e.preventDefault();
-        
         post(route('security.requests.evidence', request.id), {
             forceFormData: true,
         });
     };
 
-    /**
-     * Format date
-     */
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('id-ID', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-    };
-
-    /**
-     * Get status badge
-     */
-    const getStatusBadge = (status) => {
-        const config = {
-            'APPROVED': { label: 'Disetujui', color: 'bg-green-100 text-green-800' },
-            'EXECUTED': { label: 'Selesai', color: 'bg-purple-100 text-purple-800' },
-        };
-        const { label, color } = config[status] || { label: status, color: 'bg-gray-100 text-gray-800' };
-        return <span className={`px-3 py-1 text-sm font-semibold rounded-full ${color}`}>{label}</span>;
-    };
-
     return (
-        <AuthenticatedLayout auth={auth}>
-            <div className="py-12">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    {/* Header */}
-                    <div className="mb-8">
-                        <Link
-                            href={route('security.scanner')}
-                            className="text-sm text-gray-600 hover:text-gray-900 mb-4 inline-block"
-                        >
-                            ← Kembali ke Scanner
-                        </Link>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h2 className="text-3xl font-bold text-gray-900">
-                                    Detail Surat
-                                </h2>
-                                <p className="text-gray-600 mt-2">
-                                    {request.document_serial_no}
-                                </p>
-                            </div>
-                            <div>
-                                {getStatusBadge(request.status)}
-                            </div>
-                        </div>
+        <SecurityMobileLayout auth={auth} activeTab="history">
+            {/* Header */}
+            <header className="bg-primary text-white sticky top-0 z-50 flex items-center w-full px-4 py-4 shadow-sm h-16 shrink-0">
+                <Link href={route('security.requests.index')} className="p-2 -ml-2 mr-2 hover:bg-white/10 rounded-full transition-colors flex items-center">
+                    <span className="material-symbols-outlined">arrow_back</span>
+                </Link>
+                <h1 className="font-extrabold tracking-tight text-[20px] flex-1">Verification</h1>
+            </header>
+
+            <main className="px-4 py-6 space-y-6">
+                {/* Status Card */}
+                <div className={`bg-white rounded-xl shadow-sm p-6 border-t-4 ${
+                    request.status === 'EXECUTED' ? 'border-emerald-500' : 'border-primary'
+                } flex flex-col items-center text-center`}>
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
+                        request.status === 'EXECUTED' ? 'bg-emerald-100 text-emerald-600' : 'bg-cyan-50 text-cyan-600'
+                    }`}>
+                        <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+                            {request.status === 'EXECUTED' ? 'verified' : 'assignment_turned_in'}
+                        </span>
                     </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Left Column - Request Info */}
-                        <div className="lg:col-span-2 space-y-6">
-                            {/* Informasi Umum */}
-                            <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                                <div className="p-6">
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Informasi Surat</h3>
-                                    <dl className="grid grid-cols-1 gap-4">
-                                        <div>
-                                            <dt className="text-sm font-medium text-gray-500">Tipe Surat</dt>
-                                            <dd className="mt-1 text-sm text-gray-900">
-                                                {request.request_type === 'LOADING_IN' ? 'SIKMB Barang Masuk' :
-                                                 request.request_type === 'LOADING_OUT' ? 'SIKMB Barang Keluar' :
-                                                 'SIK (Surat Izin Kerja)'}
-                                            </dd>
-                                        </div>
-                                        <div>
-                                            <dt className="text-sm font-medium text-gray-500">Vendor</dt>
-                                            <dd className="mt-1 text-sm text-gray-900">{request.vendor?.company_name}</dd>
-                                        </div>
-                                        <div>
-                                            <dt className="text-sm font-medium text-gray-500">Tanggal Disetujui</dt>
-                                            <dd className="mt-1 text-sm text-gray-900">{formatDate(request.updated_at)}</dd>
-                                        </div>
-                                    </dl>
-                                </div>
-                            </div>
-
-                            {/* Detail SIKMB/SIK */}
-                            {request.sikmb_detail && (
-                                <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                                    <div className="p-6">
-                                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Detail Pengiriman</h3>
-                                        <dl className="grid grid-cols-1 gap-4">
-                                            <div>
-                                                <dt className="text-sm font-medium text-gray-500">Tanggal</dt>
-                                                <dd className="mt-1 text-sm text-gray-900">
-                                                    {request.sikmb_detail.start_date} s/d {request.sikmb_detail.end_date}
-                                                </dd>
-                                            </div>
-                                            <div>
-                                                <dt className="text-sm font-medium text-gray-500">Waktu</dt>
-                                                <dd className="mt-1 text-sm text-gray-900">
-                                                    {request.sikmb_detail.start_time} - {request.sikmb_detail.end_time}
-                                                </dd>
-                                            </div>
-                                            <div>
-                                                <dt className="text-sm font-medium text-gray-500">Lokasi</dt>
-                                                <dd className="mt-1 text-sm text-gray-900">
-                                                    Lantai {request.sikmb_detail.origin_floor} → Lantai {request.sikmb_detail.dest_floor}
-                                                </dd>
-                                            </div>
-                                        </dl>
-                                    </div>
-                                </div>
-                            )}
-
-                            {request.sik_detail && (
-                                <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                                    <div className="p-6">
-                                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Detail Pekerjaan</h3>
-                                        <dl className="grid grid-cols-1 gap-4">
-                                            <div>
-                                                <dt className="text-sm font-medium text-gray-500">Jenis Pekerjaan</dt>
-                                                <dd className="mt-1 text-sm text-gray-900">{request.sik_detail.job_type}</dd>
-                                            </div>
-                                            <div>
-                                                <dt className="text-sm font-medium text-gray-500">Jumlah Pekerja</dt>
-                                                <dd className="mt-1 text-sm text-gray-900">{request.sik_detail.worker_count} orang</dd>
-                                            </div>
-                                            <div>
-                                                <dt className="text-sm font-medium text-gray-500">Lokasi</dt>
-                                                <dd className="mt-1 text-sm text-gray-900">{request.sik_detail.location}</dd>
-                                            </div>
-                                        </dl>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Upload Evidence Section */}
-                            {!hasEvidence && (
-                                <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                                    <div className="p-6">
-                                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Foto Evidence</h3>
-                                        
-                                        <ValidationErrors errors={errors} />
-
-                                        <form onSubmit={handleSubmit} className="space-y-4">
-                                            {/* File Input */}
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Pilih Foto (Max 5 foto, masing-masing max 5MB)
-                                                </label>
-                                                <input
-                                                    type="file"
-                                                    accept="image/jpeg,image/jpg,image/png"
-                                                    multiple
-                                                    onChange={handleFileChange}
-                                                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                                    disabled={processing}
-                                                />
-                                            </div>
-
-                                            {/* Preview */}
-                                            {previewUrls.length > 0 && (
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    {previewUrls.map((url, index) => (
-                                                        <div key={index} className="relative">
-                                                            <img
-                                                                src={url}
-                                                                alt={`Preview ${index + 1}`}
-                                                                className="w-full h-32 object-cover rounded-lg"
-                                                            />
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => removeFile(index)}
-                                                                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                                                                disabled={processing}
-                                                            >
-                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                                </svg>
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-
-                                            {/* Submit Button */}
-                                            <Button
-                                                type="submit"
-                                                variant="primary"
-                                                disabled={processing || selectedFiles.length === 0}
-                                                className="w-full"
-                                            >
-                                                {processing ? 'Mengupload...' : `Upload ${selectedFiles.length} Foto`}
-                                            </Button>
-                                        </form>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Evidence Already Uploaded */}
-                            {hasEvidence && (
-                                <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                                    <div className="p-6">
-                                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Foto Evidence</h3>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            {request.evidences?.map((evidence, index) => (
-                                                <div key={evidence.id}>
-                                                    <img
-                                                        src={evidence.photo_url || '/placeholder.jpg'}
-                                                        alt={`Evidence ${index + 1}`}
-                                                        className="w-full h-32 object-cover rounded-lg"
-                                                    />
-                                                    <p className="text-xs text-gray-500 mt-1">
-                                                        {formatDate(evidence.uploaded_at)}
-                                                    </p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="mt-4 p-4 bg-green-50 rounded-lg">
-                                            <p className="text-sm text-green-800 font-medium">
-                                                ✓ Evidence sudah diupload. Status: EXECUTED
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Right Column - Preview Surat & QR Code (Sticky) */}
-                        <div className="lg:col-span-1">
-                            <div className="lg:sticky lg:top-6 space-y-6">
-                                {/* Preview Surat */}
-                                <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                                    <div className="p-6">
-                                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Preview Surat</h3>
-                                        
-                                        {formImageUrl ? (
-                                            <div className="space-y-4">
-                                                <div className="border border-gray-200 rounded-lg overflow-hidden">
-                                                    <img
-                                                        src={formImageUrl}
-                                                        alt="Preview Surat"
-                                                        className="w-full h-auto"
-                                                        onError={(e) => {
-                                                            e.target.style.display = 'none';
-                                                            e.target.nextElementSibling.style.display = 'flex';
-                                                        }}
-                                                    />
-                                                    <div className="hidden flex-col items-center justify-center p-8 bg-gray-50">
-                                                        <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                        </svg>
-                                                        <p className="text-sm text-gray-500">Gagal memuat preview</p>
-                                                    </div>
-                                                </div>
-                                                
-                                                <a
-                                                    href={formImageUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors"
-                                                >
-                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                    </svg>
-                                                    Buka di Tab Baru
-                                                </a>
-                                            </div>
-                                        ) : (
-                                            <div className="flex flex-col items-center justify-center p-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                                                <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                </svg>
-                                                <p className="text-sm text-gray-500 text-center">
-                                                    Tidak ada preview surat
-                                                </p>
-                                                <p className="text-xs text-gray-400 text-center mt-1">
-                                                    Vendor tidak mengupload dokumen fisik
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* QR Code */}
-                                {qrCodeUrl && (
-                                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                                        <div className="p-6">
-                                            <h3 className="text-lg font-semibold text-gray-900 mb-4">QR Code</h3>
-                                            <div className="flex justify-center bg-gray-50 p-4 rounded-lg">
-                                                <img src={qrCodeUrl} alt="QR Code" className="w-48 h-48" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                    <h2 className="text-xl font-bold text-slate-900 mb-1">{request.vendor?.company_name}</h2>
+                    <p className="text-sm text-slate-500 mb-4">{request.request_type}</p>
+                    
+                    <div className="flex gap-2 justify-center">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                            request.status === 'EXECUTED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                        }`}>
+                            {request.status === 'EXECUTED' ? 'Verified' : request.status}
+                        </span>
+                        <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wider">
+                            {request.document_serial_no || request.id.substring(0,6)}
+                        </span>
                     </div>
                 </div>
-            </div>
-        </AuthenticatedLayout>
+
+                {/* Details Accordion / List */}
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div className="p-4 bg-slate-50 border-b border-slate-100">
+                        <h3 className="font-bold text-slate-900 text-sm">Informasi Detail</h3>
+                    </div>
+                    <div className="p-4 space-y-4">
+                        {request.sikmb_detail && (
+                            <>
+                                <div>
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Waktu</p>
+                                    <p className="text-sm font-medium text-slate-900">
+                                        {request.sikmb_detail.start_date} ({request.sikmb_detail.start_time} - {request.sikmb_detail.end_time})
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Lokasi</p>
+                                    <p className="text-sm font-medium text-slate-900">
+                                        Lt. {request.sikmb_detail.origin_floor} → Lt. {request.sikmb_detail.dest_floor}
+                                    </p>
+                                </div>
+                            </>
+                        )}
+                        {request.sik_detail && (
+                            <>
+                                <div>
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Jenis Pekerjaan</p>
+                                    <p className="text-sm font-medium text-slate-900">{request.sik_detail.job_type}</p>
+                                </div>
+                                <div className="flex justify-between">
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Lokasi</p>
+                                        <p className="text-sm font-medium text-slate-900">{request.sik_detail.location}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Pekerja</p>
+                                        <p className="text-sm font-medium text-slate-900">{request.sik_detail.worker_count} Orang</p>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                {/* Evidence Section */}
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                        <h3 className="font-bold text-slate-900 text-sm">Foto Evidence</h3>
+                        {hasEvidence && (
+                            <span className="material-symbols-outlined text-emerald-500 text-xl">check_circle</span>
+                        )}
+                    </div>
+                    
+                    <div className="p-4">
+                        {hasEvidence ? (
+                            <div className="grid grid-cols-2 gap-3">
+                                {request.evidences?.map((evidence, index) => (
+                                    <div key={evidence.id} className="relative rounded-lg overflow-hidden border border-slate-200 aspect-square">
+                                        <img src={evidence.photo_url || '/placeholder.jpg'} alt="Evidence" className="w-full h-full object-cover" />
+                                        <div className="absolute bottom-0 inset-x-0 bg-black/50 p-1 text-center">
+                                            <span className="text-[10px] text-white font-medium">{formatTime(evidence.uploaded_at)}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                {(errors && Object.keys(errors).length > 0) && (
+                                    <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm font-medium mb-4">
+                                        {Object.values(errors)[0]}
+                                    </div>
+                                )}
+
+                                <div>
+                                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
+                                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                            <span className="material-symbols-outlined text-3xl text-slate-400 mb-2">add_a_photo</span>
+                                            <p className="text-sm font-medium text-slate-600">Ambil/Pilih Foto</p>
+                                            <p className="text-xs text-slate-400 mt-1">Max 5 foto (5MB/foto)</p>
+                                        </div>
+                                        <input type="file" className="hidden" accept="image/*" multiple onChange={handleFileChange} disabled={processing} capture="environment" />
+                                    </label>
+                                </div>
+
+                                {previewUrls.length > 0 && (
+                                    <div className="flex gap-3 overflow-x-auto pb-2 snap-x">
+                                        {previewUrls.map((url, index) => (
+                                            <div key={index} className="relative flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden border border-slate-200 snap-center">
+                                                <img src={url} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                                                <button type="button" onClick={() => removeFile(index)} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-black/80 flex items-center justify-center w-6 h-6">
+                                                    <span className="material-symbols-outlined text-[14px]">close</span>
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <button type="submit" disabled={processing || selectedFiles.length === 0} className="w-full bg-primary text-white rounded-xl py-3.5 font-bold shadow-sm flex justify-center items-center gap-2 hover:bg-cyan-600 active:scale-95 transition-all disabled:opacity-50 disabled:active:scale-100">
+                                    {processing ? (
+                                        <>
+                                            <span className="material-symbols-outlined animate-spin">refresh</span>
+                                            Mengupload...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="material-symbols-outlined">cloud_upload</span>
+                                            Upload & Verifikasi
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+                        )}
+                    </div>
+                </div>
+
+                {/* Surat Dokumen (Opsional, Collapse by default in mobile to save space) */}
+                {formImageUrl && (
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
+                        <details className="group">
+                            <summary className="p-4 bg-slate-50 flex justify-between items-center cursor-pointer list-none font-bold text-slate-900 text-sm">
+                                Preview Surat Asli
+                                <span className="material-symbols-outlined transition-transform group-open:rotate-180 text-slate-500">expand_more</span>
+                            </summary>
+                            <div className="p-4 border-t border-slate-100">
+                                <img src={formImageUrl} alt="Preview Surat" className="w-full h-auto rounded-lg border border-slate-200" />
+                                <a href={formImageUrl} target="_blank" rel="noopener noreferrer" className="mt-4 w-full bg-slate-100 text-slate-700 font-bold rounded-lg py-3 flex justify-center items-center gap-2 hover:bg-slate-200 active:scale-95 transition-all">
+                                    <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                                    Buka Full Screen
+                                </a>
+                            </div>
+                        </details>
+                    </div>
+                )}
+                
+                <div className="h-4"></div>
+            </main>
+        </SecurityMobileLayout>
     );
 }
-
-export default RequestDetail;

@@ -8,6 +8,7 @@ use App\Services\QrCodeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -127,7 +128,7 @@ class SecurityController extends Controller
      *
      * GET /security/requests/{id}
      */
-    public function show(string $id): Response
+    public function show(string $id)
     {
         try {
             $request = $this->securityService->getRequestDetail($id);
@@ -247,9 +248,11 @@ class SecurityController extends Controller
     {
         try {
             $stats = $this->securityService->getSecurityStatistics();
+            $recentScans = $this->securityService->getScannedRequests(3);
 
             return Inertia::render('Security/Dashboard', [
                 'stats' => $stats,
+                'recentScans' => $recentScans->items(),
             ]);
 
         } catch (\Exception $e) {
@@ -265,7 +268,39 @@ class SecurityController extends Controller
                     'ready' => 0,
                     'executed' => 0,
                 ],
+                'recentScans' => [],
             ]);
         }
+    }
+
+    /**
+     * Display security profile
+     *
+     * GET /security/profile
+     */
+    public function profile(): Response
+    {
+        return Inertia::render('Security/Profile', [
+            'user' => Auth::user()
+        ]);
+    }
+
+    /**
+     * Update password
+     *
+     * POST /security/profile/password
+     */
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'confirmed'],
+        ]);
+
+        $request->user()->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        return back()->with('success', 'Password berhasil diperbarui.');
     }
 }

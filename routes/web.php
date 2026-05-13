@@ -306,4 +306,10 @@ Route::middleware(['auth', 'active', 'role:security'])->prefix('security')->name
     // Upload Evidence Photos
     Route::post('/requests/{id}/evidence', [\App\Http\Controllers\Security\SecurityController::class, 'uploadEvidence'])
         ->name('requests.evidence');
+        
+    // Profile
+    Route::get('/profile', [\App\Http\Controllers\Security\SecurityController::class, 'profile'])
+        ->name('profile');
+    Route::post('/profile/password', [\App\Http\Controllers\Security\SecurityController::class, 'updatePassword'])
+        ->name('profile.password.update');
 });
