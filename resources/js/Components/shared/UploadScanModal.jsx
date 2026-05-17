@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { router } from '@inertiajs/react';
+import LoadingScan from './LoadingScan';
 
 /**
  * UploadScanModal
@@ -71,6 +72,10 @@ export default function UploadScanModal({ isOpen, onClose }) {
                     else setError('Gagal upload dan scan. Silakan coba lagi.');
                     setIsScanning(false);
                 },
+                onFinish: () => {
+                    // Prevent stuck loading on non-validation server errors (500, etc)
+                    setIsScanning(false);
+                }
             }
         );
     };
@@ -88,7 +93,9 @@ export default function UploadScanModal({ isOpen, onClose }) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+        <>
+            <LoadingScan isVisible={isScanning} />
+            <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 ${isScanning ? 'hidden' : ''}`}>
             {/* Backdrop */}
             <div 
                 className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
@@ -281,6 +288,7 @@ export default function UploadScanModal({ isOpen, onClose }) {
                     </button>
                 </div>
             </div>
-        </div>
+            </div>
+        </>
     );
 }
