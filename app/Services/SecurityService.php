@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Request;
 use App\Models\RequestEvidence;
+use App\Events\RequestExecuted;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -239,6 +240,9 @@ class SecurityService
             ]);
 
             DB::commit();
+
+            // Dispatch event untuk mailing system
+            RequestExecuted::dispatch($request, $security);
 
             Log::info('SECURITY_UPLOAD_EVIDENCE_SUCCESS', [
                 'security_id' => $security->id,

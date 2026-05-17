@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Request;
 use App\Models\ApprovalLog;
+use App\Events\RequestApproved;
+use App\Events\RequestRejected;
 use App\Services\Auth\AuditLogService;
 use App\Services\QrCodeService;
 use Illuminate\Support\Facades\DB;
@@ -105,6 +107,9 @@ class ApprovalService
             // Log audit trail
             $this->auditLogService->logApproveRequest($request, $approver, $notes);
 
+            // Dispatch event untuk mailing system
+            RequestApproved::dispatch($request, $approver, $currentStatus, $nextStatus, $notes);
+
             Log::info('APPROVAL_APPROVE_SUCCESS', [
                 'request_id' => $request->id,
                 'from_status' => $currentStatus,
@@ -204,6 +209,9 @@ class ApprovalService
 
             // Log audit trail
             $this->auditLogService->logRejectRequest($request, $approver, $reason);
+
+            // Dispatch event untuk mailing system
+            RequestRejected::dispatch($request, $approver, $currentStatus, $reason);
 
             Log::info('APPROVAL_REJECT_SUCCESS', [
                 'request_id' => $request->id,

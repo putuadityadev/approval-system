@@ -7,6 +7,8 @@ use App\Models\SikmDetail;
 use App\Models\SikmItem;
 use App\Models\SikDetail;
 use App\Models\ApprovalLog;
+use App\Events\RequestSubmitted;
+use App\Events\RequestCancelled;
 use App\Services\Auth\AuditLogService;
 use App\Services\StorageService;
 use Illuminate\Support\Facades\DB;
@@ -150,6 +152,9 @@ class RequestService
             // Log audit trail (tidak throw exception jika gagal)
             $this->auditLogService->logSubmitRequest($request, Auth::user());
 
+            // Dispatch event untuk mailing system
+            RequestSubmitted::dispatch($request);
+
             Log::info('REQUEST_SUBMIT_SIKMB_SUCCESS', [
                 'request_id' => $request->id,
                 'vendor_id' => $request->vendor_id,
@@ -274,6 +279,9 @@ class RequestService
 
             // Log audit trail
             $this->auditLogService->logSubmitRequest($request, Auth::user());
+
+            // Dispatch event untuk mailing system
+            RequestSubmitted::dispatch($request);
 
             Log::info('REQUEST_SUBMIT_SIK_SUCCESS', [
                 'request_id' => $request->id,
@@ -405,6 +413,9 @@ class RequestService
 
             // Log audit trail
             $this->auditLogService->logCancelRequest($request, Auth::user(), $reason);
+
+            // Dispatch event untuk mailing system
+            RequestCancelled::dispatch($request, $oldStatus, $reason);
 
             Log::info('REQUEST_CANCEL_SUCCESS', [
                 'request_id' => $request->id,

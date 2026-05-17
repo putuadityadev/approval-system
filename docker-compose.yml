@@ -18,6 +18,7 @@ services:
       - laravel_network
     depends_on:
       - db
+      - redis
     environment:
       - DB_HOST=db
       - DB_PORT=3306
@@ -62,6 +63,59 @@ services:
       - laravel_network
     command: sh -c "npm install && npm run dev -- --host"
 
+  # Redis - Queue & Cache
+  redis:
+    image: redis:7-alpine
+    container_name: laravel_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - laravel_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Laravel Horizon - Queue Worker
+  horizon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laravel_horizon
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - laravel_network
+    depends_on:
+      - db
+      - redis
+      - mailpit
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=${DB_DATABASE:-mall_approval}
+      - DB_USERNAME=${DB_USERNAME:-mall_user}
+      - DB_PASSWORD=${DB_PASSWORD:-secret123}
+      - REDIS_HOST=redis
+    command: sh -c "composer install --no-interaction && php artisan horizon"
+
+  # Mailpit - Local Email Testing (tangkap semua email tanpa kirim ke luar)
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: laravel_mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"      # Web UI (buka http://localhost:8025)
+      - "1025:1025"      # SMTP port
+    networks:
+      - laravel_network
+
   # MinIO Object Storage
   minio:
     image: minio/minio:latest
@@ -88,6 +142,8 @@ volumes:
   mysql_data:
     driver: local
   minio_data:
+    driver: local
+  redis_data:
     driver: local
 
 networks:
