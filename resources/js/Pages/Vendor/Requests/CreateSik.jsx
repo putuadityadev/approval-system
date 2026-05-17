@@ -1,36 +1,45 @@
-import { Head, Link, useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { useState, useEffect } from 'react';
 import DocumentViewer from '@/Components/shared/DocumentViewer';
 
-export default function CreateSik({ vendor }) {
-    const { data, setData, post, processing, errors } = useForm({
-        sop_form_code: '',
-        document_serial_no: '',
-        original_form_image: null,
-        worker_count: 1,
-        start_date: '',
-        end_date: '',
-        start_time: '',
-        end_time: '',
-        location: '',
-        job_type: '',
-        description: ''
-    });
+export default function CreateSik({ vendor, ocrData = {}, uploadedFileName, previewUrl }) {
+    const { flash } = usePage().props;
+    const formStorageKey = `sik_form_${uploadedFileName || 'draft'}`;
 
-    const [imagePreview, setImagePreview] = useState(null);
-
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setData('original_form_image', file);
-            setImagePreview(URL.createObjectURL(file));
+    const getInitialData = () => {
+        // Abaikan cache localStorage jika baru saja berhasil scan (ada flash message)
+        if (!flash?.success) {
+            const savedData = localStorage.getItem(formStorageKey);
+            if (savedData) {
+                try { return JSON.parse(savedData); } catch (e) {}
+            }
         }
+
+        return {
+            sop_form_code: ocrData.sop_form_code || '',
+            document_serial_no: ocrData.document_serial_no || '',
+            worker_count: ocrData.worker_count || 1,
+            start_date: ocrData.start_date || '',
+            end_date: ocrData.end_date || '',
+            start_time: ocrData.start_time || '',
+            end_time: ocrData.end_time || '',
+            location: ocrData.location || '',
+            job_type: ocrData.job_type || '',
+            description: ocrData.description || '',
+        };
     };
+
+    const { data, setData, post, processing, errors } = useForm(getInitialData());
+
+    // Persist form state ke localStorage saat data berubah
+    useEffect(() => {
+        localStorage.setItem(formStorageKey, JSON.stringify(data));
+    }, [data, formStorageKey]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
         post('/vendor/requests/sik', {
-            forceFormData: true,
+            onSuccess: () => localStorage.removeItem(formStorageKey),
         });
     };
 
@@ -54,9 +63,16 @@ export default function CreateSik({ vendor }) {
                                 <span className="material-symbols-outlined text-primary text-[32px]">engineering</span>
                                 Surat Izin Kerja (SIK)
                             </h1>
-                            <p className="mt-2 text-sm font-medium text-slate-500">
-                                Ajukan izin kerja untuk pekerjaan di area mall
-                            </p>
+                            {uploadedFileName ? (
+                                <p className="mt-2 text-sm font-medium text-slate-500 flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-[16px]">description</span>
+                                    File: {uploadedFileName}
+                                </p>
+                            ) : (
+                                <p className="mt-2 text-sm font-medium text-slate-500">
+                                    Ajukan izin kerja untuk pekerjaan di area mall
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -99,22 +115,6 @@ export default function CreateSik({ vendor }) {
                                             />
                                             {errors.document_serial_no && <p className="mt-1 text-xs font-medium text-red-600">{errors.document_serial_no}</p>}
                                         </div>
-                                    </div>
-
-                                    <div className="mt-4">
-                                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                                            Foto Form Fisik (Opsional)
-                                        </label>
-                                        <input
-                                            type="file"
-                                            accept="image/jpeg,image/jpg,image/png"
-                                            onChange={handleImageChange}
-                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-primary focus:border-primary text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
-                                        />
-                                        {errors.original_form_image && <p className="mt-1 text-xs font-medium text-red-600">{errors.original_form_image}</p>}
-                                        <p className="mt-2 text-xs font-medium text-slate-500">
-                                            Format: JPG, PNG. Maksimal 5MB.
-                                        </p>
                                     </div>
                                 </div>
 
@@ -280,7 +280,17 @@ export default function CreateSik({ vendor }) {
                                     Preview Surat Fisik
                                 </h3>
 
-                                <DocumentViewer url={imagePreview} title="Foto Form Fisik" />
+                                <DocumentViewer url={previewUrl} title="Surat Asli" />
+
+                                {previewUrl && (
+                                    <div className="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-lg flex gap-3">
+                                        <span className="material-symbols-outlined text-primary mt-0.5">lightbulb</span>
+                                        <div>
+                                            <p className="text-sm font-bold text-primary mb-1">Tips Crosscheck</p>
+                                            <p className="text-xs text-slate-600">Cocokkan data pada form di sebelah kiri dengan isi surat asli. Pastikan No. Seri dan jadwal sudah sesuai sebelum menekan Submit.</p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

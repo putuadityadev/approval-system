@@ -37,7 +37,6 @@ return [
 
     'ai_ocr' => [
         'api_key' => env('AI_OCR_API_KEY', ''),
-        'model' => env('AI_OCR_MODEL', 'gemini-2.0-flash'),
         'provider' => env('AI_OCR_PROVIDER', 'gemini'), // 'gemini' atau 'openrouter'
     ],
 

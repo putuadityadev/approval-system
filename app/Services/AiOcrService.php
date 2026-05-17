@@ -31,13 +31,19 @@ use Illuminate\Http\UploadedFile;
 class AiOcrService
 {
     protected string $apiKey;
-    protected string $model;
     protected string $provider;
+
+    protected array $freeVisionModels = [
+        'google/gemma-4-31b-it:free',
+        'google/gemma-4-26b-a4b-it:free',
+        'nvidia/nemotron-3-nano-omni:free',
+        'nvidia/nemotron-nano-12b-v2-vl:free',
+        'openrouter/free',
+    ];
 
     public function __construct()
     {
         $this->apiKey = config('services.ai_ocr.api_key', '');
-        $this->model = config('services.ai_ocr.model', 'gemini-2.0-flash');
         $this->provider = config('services.ai_ocr.provider', 'gemini');
     }
 
@@ -166,7 +172,6 @@ PROMPT;
         Log::info('AI_OCR_START', [
             'doc_type' => $docType,
             'filename' => $image->getClientOriginalName(),
-            'model' => $this->model,
             'provider' => $this->provider,
         ]);
 
@@ -176,19 +181,40 @@ PROMPT;
             $base64Image = base64_encode($imageContent);
             $mimeType = $image->getMimeType() ?: 'image/jpeg';
 
-            // Route ke provider yang sesuai
-            if ($this->provider === 'openrouter') {
-                $response = $this->callOpenRouter($base64Image, $mimeType, $prompt);
-            } else {
-                $response = $this->callGeminiDirect($base64Image, $mimeType, $prompt);
-            }
+            $modelsToTry = $this->provider === 'openrouter' ? $this->freeVisionModels : ['gemini-2.0-flash'];
+            $response = null;
+            $usedModel = null;
 
-            if (!$response->successful()) {
-                Log::error('AI_OCR_API_ERROR', [
+            foreach ($modelsToTry as $model) {
+                Log::info('AI_OCR_TRY_MODEL', [
                     'doc_type' => $docType,
+                    'model' => $model,
                     'provider' => $this->provider,
+                ]);
+
+                if ($this->provider === 'openrouter') {
+                    $response = $this->callOpenRouter($base64Image, $mimeType, $prompt, $model);
+                } else {
+                    $response = $this->callGeminiDirect($base64Image, $mimeType, $prompt, $model);
+                }
+
+                if ($response->successful()) {
+                    $usedModel = $model;
+                    break;
+                }
+
+                Log::warning('AI_OCR_MODEL_FAILED', [
+                    'doc_type' => $docType,
+                    'model' => $model,
                     'status' => $response->status(),
                     'body' => $response->body(),
+                ]);
+            }
+
+            if (!$response || !$response->successful()) {
+                Log::error('AI_OCR_ALL_MODELS_FAILED', [
+                    'doc_type' => $docType,
+                    'provider' => $this->provider,
                 ]);
                 return null;
             }
@@ -337,11 +363,12 @@ PROMPT;
      * @param string $base64Image
      * @param string $mimeType
      * @param string $prompt
+     * @param string $model
      * @return \Illuminate\Http\Client\Response
      */
-    protected function callGeminiDirect(string $base64Image, string $mimeType, string $prompt)
+    protected function callGeminiDirect(string $base64Image, string $mimeType, string $prompt, string $model)
     {
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent";
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
 
         return Http::timeout(60)
             ->withHeaders(['Content-Type' => 'application/json'])
@@ -382,11 +409,12 @@ PROMPT;
      * @param string $base64Image
      * @param string $mimeType
      * @param string $prompt
+     * @param string $model
      * @return \Illuminate\Http\Client\Response
      */
-    protected function callOpenRouter(string $base64Image, string $mimeType, string $prompt)
+    protected function callOpenRouter(string $base64Image, string $mimeType, string $prompt, string $model)
     {
-        return Http::timeout(60)
+        return Http::timeout(120)
             ->withHeaders([
                 'Content-Type' => 'application/json',
                 'Authorization' => "Bearer {$this->apiKey}",
@@ -394,7 +422,7 @@ PROMPT;
                 'X-Title' => config('app.name', 'Mall Approval System'),
             ])
             ->post('https://openrouter.ai/api/v1/chat/completions', [
-                'model' => $this->model,
+                'model' => $model,
                 'messages' => [
                     [
                         'role' => 'user',
