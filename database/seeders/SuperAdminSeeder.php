@@ -40,18 +40,26 @@ class SuperAdminSeeder extends Seeder
             return;
         }
 
-        // Buat Super Admin baru
+        // Buat Super Admin baru — credentials dari environment variable
+        $email    = env('SUPER_ADMIN_EMAIL', 'superadmin@approval.local');
+        $password = env('SUPER_ADMIN_PASSWORD');
+
+        if (empty($password)) {
+            $this->command->error('❌ SUPER_ADMIN_PASSWORD tidak ditemukan di environment!');
+            $this->command->error('   Set SUPER_ADMIN_PASSWORD di .env sebelum menjalankan seeder.');
+            return;
+        }
+
         User::create([
-            'email' => 'superadmin@mall.com',
-            'password' => Hash::make('SuperAdmin123!'),
-            'role' => 'super_admin',
-            'is_active' => true,
+            'email'             => $email,
+            'password'          => Hash::make($password),
+            'role'              => 'super_admin',
+            'is_active'         => true,
             'email_verified_at' => now(),
         ]);
 
         $this->command->info('✅ Super Admin berhasil dibuat!');
-        $this->command->info('📧 Email: superadmin@mall.com');
-        $this->command->info('🔑 Password: SuperAdmin123!');
-        $this->command->warn('⚠️  PENTING: Ganti password setelah login pertama kali!');
+        $this->command->info("📧 Email: {$email}");
+        $this->command->warn('⚠️  Password dikonfigurasi via SUPER_ADMIN_PASSWORD di .env');
     }
 }

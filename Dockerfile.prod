@@ -1,0 +1,79 @@
+# ==============================================================================
+# Stage 1: Node.js — Build frontend assets (Vite + React + Tailwind)
+# ==============================================================================
+FROM node:20-alpine AS node-builder
+
+WORKDIR /app
+
+# Layer cache: install deps first, copy source later
+COPY package.json package-lock.json ./
+RUN npm ci --frozen-lockfile
+
+COPY . .
+RUN npm run build
+
+# ==============================================================================
+# Stage 2: PHP — Production application (nginx + php-fpm + supervisor)
+# ==============================================================================
+FROM php:8.3-fpm
+
+# System dependencies
+RUN apt-get update && apt-get install -y \
+    nginx \
+    supervisor \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    unzip \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# PHP extensions
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+
+# Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
+
+# Install PHP dependencies (cache-friendly)
+COPY composer.json composer.lock ./
+RUN composer install \
+    --no-interaction \
+    --no-scripts \
+    --no-dev \
+    --optimize-autoloader
+
+# Copy full application
+COPY . /var/www/html
+
+# Overwrite public/build with Vite-built assets
+COPY --from=node-builder /app/public/build /var/www/html/public/build
+
+# Post-install (generate autoload, etc.)
+RUN composer dump-autoload --optimize --no-dev
+
+# Nginx config
+COPY docker/nginx/prod.conf /etc/nginx/sites-available/default
+
+# Supervisor config
+COPY docker/supervisor/prod.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Entrypoint
+COPY docker/scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Create log directory for supervisor
+RUN mkdir -p /var/log/supervisor
+
+# Permissions
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
+EXPOSE 80
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

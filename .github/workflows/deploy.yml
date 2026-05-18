@@ -1,0 +1,96 @@
+name: CI/CD — Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:   # allow manual trigger
+
+jobs:
+  # ── Job 1: Test ──────────────────────────────────────────────────────────────
+  test:
+    name: 🧪 Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring, exif, pcntl, bcmath, gd
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Copy env for testing
+        run: cp .env.example .env
+
+      - name: Generate app key
+        run: php artisan key:generate
+
+      - name: Run PHPUnit tests
+        run: php artisan test --stop-on-failure
+
+  # ── Job 2: Deploy ─────────────────────────────────────────────────────────────
+  deploy:
+    name: 🚀 Deploy to Dokploy
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Trigger Dokploy deployment
+        run: |
+          echo "Triggering deployment via Dokploy webhook..."
+          HTTP_STATUS=$(curl -s -o /tmp/dokploy_response.txt -w "%{http_code}" \
+            -X POST "${{ secrets.DOKPLOY_DEPLOY_WEBHOOK }}" \
+            -H "Content-Type: application/json")
+
+          cat /tmp/dokploy_response.txt
+          echo ""
+
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "❌ Dokploy webhook returned HTTP $HTTP_STATUS"
+            exit 1
+          fi
+          echo "✅ Deployment triggered successfully!"
+
+      - name: Wait for deployment to complete
+        run: |
+          echo "⏳ Waiting 90 seconds for deployment to finish..."
+          sleep 90
+
+      - name: Health check
+        run: |
+          echo "🏥 Running health check on https://approval.seviraku.cloud/up ..."
+          for i in 1 2 3; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              --max-time 15 \
+              "https://approval.seviraku.cloud/up")
+            if [ "$HTTP_STATUS" -eq 200 ]; then
+              echo "✅ App is healthy! (HTTP $HTTP_STATUS)"
+              exit 0
+            fi
+            echo "⚠️  Attempt $i failed (HTTP $HTTP_STATUS). Retrying in 30s..."
+            sleep 30
+          done
+          echo "❌ Health check failed after 3 attempts!"
+          exit 1
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "🔴 DEPLOYMENT FAILED on commit ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Triggered by: ${{ github.actor }}"
+          # Add Slack/Telegram notification here if needed
