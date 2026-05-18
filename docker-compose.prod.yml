@@ -19,8 +19,7 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-    ports:
-      - "8000:80"   # Dokploy routes approval.seviraku.cloud → this port
+    # No ports exposed — Dokploy/Traefik routes traffic to internal port 80
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/up"]
       interval: 30s
