@@ -3,32 +3,41 @@ import { router, Link } from '@inertiajs/react';
 import { Html5Qrcode } from 'html5-qrcode';
 
 /**
- * Security QR Scanner
+ * Security QR Scanner — QRIS-style
  *
- * Halaman untuk scan QR code surat menggunakan camera dengan html5-qrcode library.
- * Didesain full-screen 100vh tanpa scrolling (standalone modal feel).
+ * Desktop: centered modal card layout
+ * Mobile: full-screen camera, no zoom
+ * Camera feed always shown at natural resolution (object-fit: contain) so it stays sharp.
  */
 export default function Scanner({ errors }) {
     const [scanning, setScanning] = useState(false);
     const [cameraError, setCameraError] = useState(null);
     const [processing, setProcessing] = useState(false);
     const [lastScan, setLastScan] = useState(null);
+    const [scanFeedback, setScanFeedback] = useState(null);
     const html5QrCodeRef = useRef(null);
     const scannerDivId = 'qr-reader';
 
     const startScanning = async () => {
         try {
             setCameraError(null);
-            
+
             if (!html5QrCodeRef.current) {
                 html5QrCodeRef.current = new Html5Qrcode(scannerDivId);
             }
 
             const qrCodeScanner = html5QrCodeRef.current;
+
             const config = {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0, // Or let it be responsive
+                fps: 15,
+                // Scan 80% of the viewfinder — QR doesn't need to be dead-center
+                qrbox: (viewfinderWidth, viewfinderHeight) => {
+                    const side = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.8);
+                    return { width: side, height: side };
+                },
+                experimentalFeatures: {
+                    useBarCodeDetectorIfSupported: true,
+                },
             };
 
             await qrCodeScanner.start(
@@ -39,7 +48,6 @@ export default function Scanner({ errors }) {
             );
 
             setScanning(true);
-
         } catch (error) {
             console.error('Camera error:', error);
             setCameraError('Tidak dapat mengakses camera. Pastikan permission sudah diberikan.');
@@ -57,17 +65,15 @@ export default function Scanner({ errors }) {
         }
     };
 
-    const onScanSuccess = (decodedText, decodedResult) => {
-        if (lastScan && Date.now() - lastScan < 3000) {
-            return;
-        }
-
+    const onScanSuccess = (decodedText) => {
+        if (lastScan && Date.now() - lastScan < 3000) return;
         setLastScan(Date.now());
+        setScanFeedback('detected');
         submitQrCode(decodedText);
     };
 
-    const onScanFailure = (error) => {
-        // Normal, ignore
+    const onScanFailure = () => {
+        // Normal scan miss — ignore
     };
 
     const submitQrCode = async (qrContent) => {
@@ -79,126 +85,265 @@ export default function Scanner({ errors }) {
         }, {
             onFinish: () => {
                 setProcessing(false);
+                setScanFeedback(null);
             },
             onError: () => {
                 setProcessing(false);
-                setTimeout(() => {
-                    startScanning();
-                }, 2000);
+                setScanFeedback(null);
+                setTimeout(() => startScanning(), 2000);
             }
         });
     };
 
     useEffect(() => {
-        // Auto start scanning if camera is available
         startScanning();
         return () => {
             if (html5QrCodeRef.current) {
-                html5QrCodeRef.current.stop().catch(err => {
-                    console.error('Error stopping scanner on unmount:', err);
-                });
+                html5QrCodeRef.current.stop().catch(() => {});
             }
         };
     }, []);
 
+    /* ─── Corner bracket component ─── */
+    const CornerBrackets = () => (
+        <div className="scanner-corners">
+            <div className="corner tl" />
+            <div className="corner tr" />
+            <div className="corner bl" />
+            <div className="corner br" />
+            <div className="scan-line" />
+        </div>
+    );
+
     return (
-        <div className="bg-black h-[100dvh] w-full text-white font-sans antialiased flex flex-col relative overflow-hidden">
-            {/* Custom Styles for Html5Qrcode to force full screen cover */}
+        <>
+            {/* ─── Global styles for html5-qrcode overrides ─── */}
             <style dangerouslySetInnerHTML={{__html: `
+                /* ── html5-qrcode internals ── */
                 #qr-reader {
                     border: none !important;
+                    background: #000 !important;
+                    position: relative !important;
                     width: 100% !important;
                     height: 100% !important;
-                    position: absolute !important;
-                    top: 0;
-                    left: 0;
                 }
                 #qr-reader video {
-                    object-fit: cover !important;
+                    /* CONTAIN = no zoom, shows full camera feed at native aspect ratio */
+                    object-fit: contain !important;
                     width: 100% !important;
                     height: 100% !important;
+                    display: block !important;
+                    background: #000 !important;
                 }
                 #qr-reader__scan_region {
-                    background: black;
-                    width: 100% !important;
-                    height: 100% !important;
+                    background: transparent !important;
+                    min-height: 0 !important;
                 }
-                /* Hide everything else */
-                #qr-reader__dashboard_section_csr span,
-                #qr-reader__dashboard_section_swaplink {
+                /* Hide ALL library UI chrome */
+                #qr-reader__scan_region > img,
+                #qr-reader__scan_region > canvas,
+                #qr-reader__dashboard_section_csr,
+                #qr-reader__dashboard_section_swaplink,
+                #qr-reader__header_message,
+                #qr-reader__status_span,
+                #qr-reader__dashboard,
+                #qr-shaded-region {
                     display: none !important;
+                }
+
+                /* ── Corner bracket overlay ── */
+                .scanner-corners {
+                    position: absolute;
+                    inset: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    pointer-events: none;
+                    z-index: 20;
+                }
+                .scanner-corners .corner {
+                    position: absolute;
+                    width: 32px;
+                    height: 32px;
+                    border-color: rgba(255,255,255,0.85);
+                    border-style: solid;
+                    border-width: 0;
+                }
+                .scanner-corners .tl { top: 15%; left: 15%; border-top-width: 3px; border-left-width: 3px; border-radius: 6px 0 0 0; }
+                .scanner-corners .tr { top: 15%; right: 15%; border-top-width: 3px; border-right-width: 3px; border-radius: 0 6px 0 0; }
+                .scanner-corners .bl { bottom: 15%; left: 15%; border-bottom-width: 3px; border-left-width: 3px; border-radius: 0 0 0 6px; }
+                .scanner-corners .br { bottom: 15%; right: 15%; border-bottom-width: 3px; border-right-width: 3px; border-radius: 0 0 6px 0; }
+
+                /* Animated scan line between corners */
+                .scan-line {
+                    position: absolute;
+                    left: 15%;
+                    right: 15%;
+                    height: 2px;
+                    background: linear-gradient(90deg, transparent, #1e8dae, transparent);
+                    opacity: 0.7;
+                    animation: scanLineMove 2.5s ease-in-out infinite;
+                }
+                @keyframes scanLineMove {
+                    0%, 100% { top: 16%; }
+                    50%       { top: 83%; }
+                }
+
+                /* ── Responsive layout ── */
+                /* Mobile: full-screen camera */
+                @media (max-width: 767px) {
+                    .scanner-page {
+                        position: fixed;
+                        inset: 0;
+                        background: #000;
+                        display: flex;
+                        flex-direction: column;
+                        z-index: 100;
+                    }
+                    .scanner-viewport {
+                        flex: 1;
+                        position: relative;
+                        overflow: hidden;
+                        background: #000;
+                    }
+                }
+
+                /* Desktop: centered modal card */
+                @media (min-width: 768px) {
+                    .scanner-page {
+                        position: fixed;
+                        inset: 0;
+                        background: rgba(0,0,0,0.7);
+                        backdrop-filter: blur(8px);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 100;
+                        padding: 2rem;
+                    }
+                    .scanner-modal {
+                        background: #111;
+                        border-radius: 1.25rem;
+                        overflow: hidden;
+                        width: 100%;
+                        max-width: 560px;
+                        box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .scanner-viewport {
+                        position: relative;
+                        width: 100%;
+                        /* 4:3 aspect ratio container — matches most webcams */
+                        aspect-ratio: 4 / 3;
+                        overflow: hidden;
+                        background: #000;
+                    }
+                }
+
+                /* Green flash on scan */
+                @keyframes flashBorder {
+                    0% { box-shadow: inset 0 0 0 4px rgba(74,222,128,0.9); }
+                    100% { box-shadow: inset 0 0 0 4px rgba(74,222,128,0); }
                 }
             `}} />
 
-            {/* Header (Absolute, overlay on top of camera) */}
-            <header className="absolute top-0 left-0 w-full z-50 bg-gradient-to-b from-black/80 to-transparent text-white flex justify-between items-center px-4 pt-safe pb-6 h-24">
-                <Link href={route('security.dashboard')} className="p-2 hover:bg-white/20 rounded-full transition-colors flex items-center justify-center bg-black/40 backdrop-blur-sm">
-                    <span className="material-symbols-outlined text-2xl">arrow_back</span>
-                </Link>
-                <h1 className="font-bold text-lg drop-shadow-md">Scan QR Code</h1>
-                <div className="w-10 h-10"></div>
-            </header>
+            <div className="scanner-page text-white font-sans antialiased">
+                {/* Desktop: wraps everything in a card. Mobile: ignored. */}
+                <div className="scanner-modal md:max-w-[560px] w-full flex flex-col h-full md:h-auto">
 
-            {/* Main Scanner Area */}
-            <main className="flex-1 w-full h-full relative">
-                
-                {/* The Div where Html5Qrcode injects its elements */}
-                <div id={scannerDivId} className="w-full h-full bg-black relative z-10"></div>
-
-                {/* Fallback Screen when Camera is Stopped */}
-                {!scanning && !processing && !cameraError && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-slate-900">
-                        <span className="material-symbols-outlined text-6xl text-slate-600 mb-3">no_photography</span>
-                        <p className="text-slate-400 font-bold tracking-wide">CAMERA PAUSED</p>
+                    {/* ── Header ── */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-black/60 md:bg-[#111] md:border-b md:border-white/10 z-40 relative">
+                        <Link
+                            href={route('security.dashboard')}
+                            className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-all active:scale-90"
+                        >
+                            <span className="material-symbols-outlined text-lg">arrow_back</span>
+                        </Link>
+                        <h1 className="font-bold text-base tracking-wide">Scan QR Code</h1>
+                        <div className="w-9 h-9" />
                     </div>
-                )}
 
-                {/* Processing Overlay */}
-                {processing && (
-                    <div className="absolute inset-0 z-40 bg-black/80 flex flex-col items-center justify-center backdrop-blur-sm">
-                        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-                        <p className="text-lg font-bold">Verifying Code...</p>
+                    {/* ── Camera viewport ── */}
+                    <div className="scanner-viewport">
+                        {/* html5-qrcode mounts video here */}
+                        <div
+                            id={scannerDivId}
+                            style={{
+                                position: 'absolute',
+                                inset: 0,
+                                width: '100%',
+                                height: '100%',
+                            }}
+                        />
+
+                        {/* Corner guide overlay */}
+                        {scanning && <CornerBrackets />}
+
+                        {/* Scan detected flash */}
+                        {scanFeedback === 'detected' && (
+                            <div
+                                className="absolute inset-0 z-30 pointer-events-none"
+                                style={{ animation: 'flashBorder 0.4s ease-out forwards' }}
+                            />
+                        )}
+
+                        {/* Camera paused fallback */}
+                        {!scanning && !processing && !cameraError && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-[#0a0a0a]">
+                                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-3">
+                                    <span className="material-symbols-outlined text-3xl text-slate-500">no_photography</span>
+                                </div>
+                                <p className="text-slate-400 font-semibold text-sm">Camera Paused</p>
+                            </div>
+                        )}
+
+                        {/* Processing overlay */}
+                        {processing && (
+                            <div className="absolute inset-0 z-40 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center">
+                                <div className="w-14 h-14 border-[3px] border-primary border-t-transparent rounded-full animate-spin mb-4" />
+                                <p className="text-base font-bold">Verifying...</p>
+                            </div>
+                        )}
+
+                        {/* Error toast */}
+                        {(errors?.qr_content || cameraError) && (
+                            <div className="absolute bottom-4 left-3 right-3 z-50 bg-red-500/95 backdrop-blur-md text-white px-4 py-3 rounded-xl text-sm font-medium shadow-xl flex items-start gap-2.5">
+                                <span className="material-symbols-outlined text-xl flex-shrink-0 mt-px">error</span>
+                                <span className="leading-snug">{errors?.qr_content || cameraError}</span>
+                            </div>
+                        )}
                     </div>
-                )}
 
-                {/* Errors Overlay */}
-                {(errors?.qr_content || cameraError) && (
-                    <div className="absolute top-24 left-4 right-4 z-50 bg-red-500 text-white p-4 rounded-2xl text-sm font-medium shadow-2xl flex items-start gap-3 animate-in fade-in slide-in-from-top-4">
-                        <span className="material-symbols-outlined text-2xl">error</span>
-                        <div className="flex-1 leading-relaxed mt-0.5">
-                            {errors?.qr_content || cameraError}
+                    {/* ── Bottom controls ── */}
+                    <div className="px-4 py-4 bg-black/60 md:bg-[#111] md:border-t md:border-white/10 z-40 relative">
+                        <p className="text-center text-xs text-white/60 mb-3 font-medium">
+                            Arahkan kamera ke QR Code — scan otomatis
+                        </p>
+                        <div className="max-w-xs mx-auto">
+                            {!scanning ? (
+                                <button
+                                    onClick={startScanning}
+                                    disabled={processing}
+                                    className="w-full bg-primary hover:bg-primary/90 text-white rounded-xl py-3 font-bold transition-all active:scale-[0.97] flex justify-center items-center gap-2 text-sm shadow-lg disabled:opacity-50"
+                                >
+                                    <span className="material-symbols-outlined text-lg">videocam</span>
+                                    Start Camera
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={stopScanning}
+                                    disabled={processing}
+                                    className="w-full bg-white/10 hover:bg-white/15 text-white border border-white/15 rounded-xl py-3 font-bold transition-all active:scale-[0.97] flex justify-center items-center gap-2 text-sm"
+                                >
+                                    <span className="material-symbols-outlined text-red-400 text-lg">videocam_off</span>
+                                    Stop Camera
+                                </button>
+                            )}
                         </div>
                     </div>
-                )}
-            </main>
-
-            {/* Controls (Absolute, overlay on bottom) */}
-            <div className="absolute bottom-0 left-0 w-full p-6 pb-safe bg-gradient-to-t from-black via-black/80 to-transparent z-30 pt-16">
-                <p className="text-center text-sm text-white/80 mb-6 px-4 drop-shadow-md font-medium">
-                    Arahkan kamera ke QR Code surat. Pemindaian akan berjalan otomatis.
-                </p>
-                <div className="flex justify-center max-w-sm mx-auto">
-                    {!scanning ? (
-                        <button 
-                            onClick={startScanning}
-                            disabled={processing}
-                            className="w-full bg-primary hover:bg-cyan-600 text-white rounded-2xl py-4 font-bold transition-all active:scale-95 flex justify-center items-center gap-2 shadow-[0_4px_20px_0_rgba(30,141,174,0.5)]"
-                        >
-                            <span className="material-symbols-outlined text-xl">videocam</span>
-                            Start Camera
-                        </button>
-                    ) : (
-                        <button 
-                            onClick={stopScanning}
-                            disabled={processing}
-                            className="w-full bg-white/10 backdrop-blur-md hover:bg-white/20 text-white border border-white/20 rounded-2xl py-4 font-bold transition-all active:scale-95 flex justify-center items-center gap-2"
-                        >
-                            <span className="material-symbols-outlined text-red-400 text-xl">videocam_off</span>
-                            Stop Camera
-                        </button>
-                    )}
                 </div>
             </div>
-        </div>
+        </>
     );
 }

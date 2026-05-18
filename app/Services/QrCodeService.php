@@ -74,35 +74,28 @@ class QrCodeService
             $request = Request::with('vendor')->findOrFail($requestId);
 
             // Validate status
-            if ($request->status !== 'APPROVED') {
-                throw new \Exception('QR code hanya bisa di-generate untuk request dengan status APPROVED.');
+            if (!in_array($request->status, ['APPROVED', 'EXECUTED'])) {
+                throw new \Exception('QR code hanya bisa di-generate untuk request dengan status APPROVED atau EXECUTED.');
             }
 
             // Prepare QR content
-            $approvedAt = now();
-            $validUntil = $approvedAt->copy()->addDays(7); // Valid 7 hari
-
+            // Keep payload minimal to reduce QR density — backend looks up details from request_id
             $qrContent = [
                 'request_id' => $request->id,
-                'vendor_name' => $request->vendor->company_name,
-                'request_type' => $request->request_type,
-                'document_serial_no' => $request->document_serial_no,
-                'approved_at' => $approvedAt->toDateTimeString(),
-                'valid_until' => $validUntil->toDateTimeString(),
             ];
 
-            // Generate signature untuk prevent tampering
-            $qrContent['signature'] = $this->generateSignature($qrContent);
+            // Generate signature to prevent tampering
+            $qrContent['sig'] = $this->generateSignature($qrContent);
 
-            // Convert to JSON
-            $qrContentJson = json_encode($qrContent);
+            // Convert to JSON (short key names to reduce character count)
+            $qrContentJson = json_encode($qrContent, JSON_UNESCAPED_UNICODE);
 
             // Generate QR code image (SVG format - tidak perlu imagick)
-            // Size diperbesar untuk kemudahan scan, error correction maksimal
+            // Error correction M = 15% recovery (balanced), lower than H so QR is less dense & easier to scan
             $qrCodeImage = QrCode::format('svg')
-                ->size(500) // Diperbesar dari 300 ke 500 untuk lebih mudah di-scan
-                ->errorCorrection('H') // High error correction (30% data bisa rusak tetap bisa dibaca)
-                ->margin(2) // Margin 2 modules untuk white space
+                ->size(600)
+                ->errorCorrection('M') // Medium error correction — less dense, faster to scan
+                ->margin(3)
                 ->generate($qrContentJson);
 
             // Upload ke MinIO
@@ -117,7 +110,6 @@ class QrCodeService
             Log::info('QR_CODE_GENERATE_SUCCESS', [
                 'request_id' => $request->id,
                 'qr_code_path' => $qrCodePath,
-                'valid_until' => $validUntil->toDateTimeString(),
             ]);
 
             return $qrCodePath;
@@ -163,7 +155,7 @@ class QrCodeService
             }
 
             // Validate required fields
-            $requiredFields = ['request_id', 'vendor_name', 'document_serial_no', 'valid_until', 'signature'];
+            $requiredFields = ['request_id', 'sig'];
             foreach ($requiredFields as $field) {
                 if (!isset($qrData[$field])) {
                     throw new \Exception("QR code tidak lengkap. Field '{$field}' tidak ditemukan.");
@@ -171,19 +163,13 @@ class QrCodeService
             }
 
             // Validate signature
-            $signature = $qrData['signature'];
-            unset($qrData['signature']); // Remove signature untuk verify
+            $signature = $qrData['sig'];
+            unset($qrData['sig']); // Remove signature untuk verify
 
             $expectedSignature = $this->generateSignature($qrData);
 
             if ($signature !== $expectedSignature) {
                 throw new \Exception('QR code tidak valid. Signature tidak cocok.');
-            }
-
-            // Validate expiry
-            $validUntil = \Carbon\Carbon::parse($qrData['valid_until']);
-            if (now()->greaterThan($validUntil)) {
-                throw new \Exception('QR code sudah expired. Valid until: ' . $validUntil->format('d M Y H:i'));
             }
 
             // Validate request exists dan status APPROVED
@@ -193,17 +179,17 @@ class QrCodeService
                 throw new \Exception('Request tidak ditemukan.');
             }
 
-            if ($request->status !== 'APPROVED') {
+            if (!in_array($request->status, ['APPROVED', 'EXECUTED'])) {
                 throw new \Exception('Request belum approved atau sudah diproses. Status: ' . $request->status);
             }
 
             Log::info('QR_CODE_VALIDATE_SUCCESS', [
                 'request_id' => $qrData['request_id'],
-                'document_serial_no' => $qrData['document_serial_no'],
+                'document_serial_no' => $request->document_serial_no,
             ]);
 
             // Add signature back untuk return
-            $qrData['signature'] = $signature;
+            $qrData['sig'] = $signature;
 
             return $qrData;
 

@@ -64,6 +64,67 @@ export default function Detail({ request, vendor, qrCodeUrl, formImageUrl }) {
         { key: 'PENDING_GM', label: 'GM Approval', role: 'approver_gm', past: ['APPROVED', 'EXECUTED'] },
     ];
 
+    const handleDownloadQR = async (e) => {
+        e.preventDefault();
+        try {
+            const response = await fetch(qrCodeUrl);
+            if (!response.ok) throw new Error('Network response was not ok');
+            
+            const blob = await response.blob();
+            const text = await blob.text();
+            
+            // Check if it's an SVG
+            if (blob.type.includes('svg') || text.trim().startsWith('<svg')) {
+                const img = new Image();
+                const svgBlob = new Blob([text], {type: 'image/svg+xml;charset=utf-8'});
+                const url = window.URL.createObjectURL(svgBlob);
+                
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width || 500;
+                    canvas.height = img.height || 500;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Add white background
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    canvas.toBlob((pngBlob) => {
+                        const pngUrl = window.URL.createObjectURL(pngBlob);
+                        const link = document.createElement('a');
+                        link.href = pngUrl;
+                        link.download = `QR_${request.document_serial_no}.png`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        window.URL.revokeObjectURL(pngUrl);
+                        window.URL.revokeObjectURL(url);
+                    }, 'image/png');
+                };
+                
+                img.onerror = () => {
+                    console.error("Error loading SVG into image");
+                    window.open(qrCodeUrl, '_blank');
+                };
+                
+                img.src = url;
+            } else {
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `QR_${request.document_serial_no}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            }
+        } catch (error) {
+            console.error("Error downloading QR code:", error);
+            window.open(qrCodeUrl, '_blank');
+        }
+    };
+
     const getStepState = (step) => {
         if (request.status === 'SUBMITTED') {
             if (step.key === 'SUBMITTED') return 'completed';
@@ -332,13 +393,12 @@ export default function Detail({ request, vendor, qrCodeUrl, formImageUrl }) {
                                             </div>
                                         )}
                                         
-                                        <a
-                                            href={qrCodeUrl}
-                                            download={`QR_${request.document_serial_no}.svg`}
+                                        <button
+                                            onClick={handleDownloadQR}
                                             className="w-full py-2.5 bg-primary text-white text-[13px] font-bold rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
                                         >
                                             Download QR
-                                        </a>
+                                        </button>
                                     </>
                                 ) : request.status === 'REJECTED' || request.status === 'CANCELLED' ? (
                                     <>

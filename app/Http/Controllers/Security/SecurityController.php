@@ -143,6 +143,15 @@ class SecurityController extends Controller
                 $formImageUrl = $storageService->getFileUrl($request->original_form_image);
             }
 
+            // Generate presigned URL for each evidence photo
+            // The model stores MinIO path in image_url, browser needs a real URL (photo_url)
+            $storageService = app(\App\Services\StorageService::class);
+            $request->evidences->each(function ($evidence) use ($storageService) {
+                $evidence->photo_url = $evidence->image_url
+                    ? $storageService->getFileUrl($evidence->image_url)
+                    : null;
+            });
+
             // Check apakah sudah ada evidence (sudah di-upload)
             $hasEvidence = $request->evidences->count() > 0;
 
