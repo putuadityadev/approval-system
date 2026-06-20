@@ -55,14 +55,16 @@ services:
     environment:
       MINIO_ROOT_USER:     ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_SERVER_URL:    https://storage.seviraku.cloud
     volumes:
       - minio_data:/data
     networks:
       - approval_network
+      - dokploy-network
     command: server /data --console-address ":9001"
     ports:
       - "9001:9001"   # MinIO Console (protect with Dokploy basic auth or firewall)
-      # Port 9000 (API) is internal only — accessed by app via docker network
+      # Port 9000 (API) exposed to dokploy-network for Traefik routing
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
