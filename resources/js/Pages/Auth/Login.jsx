@@ -37,143 +37,154 @@ function Login({ errors, status }) {
 
     return (
         <>
-            <Head title="Login" />
-            <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-background font-sans text-foreground selection:bg-primary/20">
-                <div className="flex h-full grow flex-col">
+            <Head title="Login - Icon Mall Bali" />
+            <div className="min-h-screen w-full flex bg-background font-sans text-foreground selection:bg-primary/20">
+                
+                {/* Left Side - Image Panel */}
+                <div className="hidden lg:flex lg:w-[55%] relative bg-zinc-950 overflow-hidden">
+                    {/* Background Image */}
+                    <div 
+                        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[20s] ease-out hover:scale-110"
+                        style={{ backgroundImage: "url('/icon-mall-bg.webp')" }}
+                    />
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20" />
+                    <div className="absolute inset-0 bg-primary/20 mix-blend-multiply" />
+                    
+                    {/* Content */}
+                    <div className="relative z-10 flex flex-col justify-end w-full p-12 xl:p-16 text-white pb-20">
 
-                    {/* Main Content */}
-                    <main className="flex-1 flex items-center justify-center p-6 sm:p-10">
-                        <div className="w-full max-w-[1000px] grid md:grid-cols-2 bg-card rounded-2xl shadow-xl overflow-hidden border border-border">
-                            {/* Left Panel */}
-                            <div className="hidden md:flex relative bg-primary p-12 text-primary-foreground flex-col justify-between">
-                                <div 
-                                    className="absolute inset-0 opacity-10 bg-cover bg-center" 
-                                    style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuD-gZINpkayiPS-AK0ODgY2b2YIhWe-wTK4ch4wkt2Bis1UQSqAaa21-gdhSAN-UKptBSsUMD8mBfqYCJvVc01BcfWVqVLuKTr2RoNe8IbFoZEzKWBB7Hop4Z3INiPMOqbmJ6B0M2T16PE59K4YCb0CS9W469HqEu6mzWegMmS6vEFjigqgEFyzhycZ8ZvZrJ6lPCSvPfTd_7fYBZI0laVxfop2cE9PAtBekTL-WolGa9OxePSo5n7OiH7mHzIEWOlNqNd4dHVfQvc')" }}
-                                ></div>
-                                <div className="relative z-10">
-                                    <h1 className="text-4xl font-black mb-6 leading-tight tracking-tight">Digital Approval System</h1>
-                                    <p className="text-white/80 text-lg">Streamline your mall operations with our enterprise-grade approval workflow. Secure, fast, and transparent.</p>
-                                </div>
-                                <div className="relative z-10 space-y-6 mt-12">
-                                    <div className="flex items-start gap-4">
-                                        <div className="bg-white/10 p-2 rounded-lg shrink-0 flex">
-                                            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}> task_alt </span>
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-lg">Instant Approvals</p>
-                                            <p className="text-sm text-white/70">Reduce turnaround time for maintenance and vendor requests.</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-start gap-4">
-                                        <div className="bg-white/10 p-2 rounded-lg shrink-0 flex">
-                                            <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}> monitoring </span>
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-lg">Real-time Tracking</p>
-                                            <p className="text-sm text-white/70">Monitor the status of every request in your dashboard.</p>
-                                        </div>
-                                    </div>
-                                </div>
+                        <h1 className="text-5xl xl:text-6xl font-black mb-6 leading-[1.1] tracking-tight drop-shadow-2xl">
+                            Digital Approval<br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60">System</span>
+                        </h1>
+                        <p className="text-lg xl:text-xl text-white/80 max-w-lg font-medium leading-relaxed drop-shadow-md">
+                            Streamline your mall operations with our enterprise-grade approval workflow. Secure, fast, and transparent.
+                        </p>
+                        
+                        <div className="mt-12 flex gap-4 flex-wrap">
+                            <div className="flex items-center gap-3 bg-black/40 backdrop-blur-md px-5 py-3.5 rounded-2xl border border-white/10 shadow-lg transition-transform hover:-translate-y-1">
+                                <span className="material-symbols-outlined text-primary-300" style={{ fontVariationSettings: "'FILL' 1" }}> verified </span>
+                                <span className="text-sm font-bold tracking-wide">Instant Approvals</span>
+                            </div>
+                            <div className="flex items-center gap-3 bg-black/40 backdrop-blur-md px-5 py-3.5 rounded-2xl border border-white/10 shadow-lg transition-transform hover:-translate-y-1">
+                                <span className="material-symbols-outlined text-primary-300" style={{ fontVariationSettings: "'FILL' 1" }}> monitoring </span>
+                                <span className="text-sm font-bold tracking-wide">Real-time Tracking</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right Side - Form Panel */}
+                <div className="w-full lg:w-[45%] flex flex-col items-center justify-center p-8 sm:p-12 xl:p-20 relative">
+                    
+
+
+                    <div className="w-full max-w-[420px] space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                        <div>
+                            <h2 className="text-4xl font-extrabold text-foreground tracking-tight mb-2">Welcome Back</h2>
+                            <p className="text-muted-foreground text-base font-medium">Enter your credentials to access the portal.</p>
+                        </div>
+
+                        {status && <Alert type="success" message={status} className="mb-6 shadow-sm rounded-xl" />}
+                        <ValidationErrors errors={errors} className="mb-6" />
+
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div className="space-y-5">
+                                <Input
+                                    type="email"
+                                    name="email"
+                                    label="Email Address"
+                                    icon="mail"
+                                    value={data.email}
+                                    onChange={(e) => setData('email', e.target.value)}
+                                    placeholder="admin@iconmallbali.com"
+                                    required
+                                    error={errors.email}
+                                />
+
+                                <Input
+                                    type={showPassword ? 'text' : 'password'}
+                                    name="password"
+                                    label="Password"
+                                    icon="lock"
+                                    value={data.password}
+                                    onChange={(e) => setData('password', e.target.value)}
+                                    placeholder="••••••••"
+                                    required
+                                    error={errors.password}
+                                    labelRight={
+                                        <Link href="/forgot-password" className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors">
+                                            Forgot password?
+                                        </Link>
+                                    }
+                                    rightElement={
+                                        <button 
+                                            type="button" 
+                                            className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none p-1 rounded-md"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                        >
+                                            <span className="material-symbols-outlined text-xl">
+                                                {showPassword ? 'visibility_off' : 'visibility'}
+                                            </span>
+                                        </button>
+                                    }
+                                />
                             </div>
 
-                            {/* Right Panel (Form) */}
-                            <div className="p-8 md:p-12 flex flex-col justify-center">
-                                <div className="mb-8">
-                                    <h2 className="text-3xl font-extrabold text-foreground mb-2">Welcome Back</h2>
-                                    <p className="text-muted-foreground font-medium">Please enter your credentials to access the portal.</p>
-                                </div>
-
-                                {status && <Alert type="success" message={status} className="mb-6" />}
-                                <ValidationErrors errors={errors} className="mb-6" />
-
-                                <form onSubmit={handleSubmit} className="space-y-5">
-                                    <Input
-                                        type="email"
-                                        name="email"
-                                        label="Email Address"
-                                        icon="mail"
-                                        value={data.email}
-                                        onChange={(e) => setData('email', e.target.value)}
-                                        placeholder="admin@mall.com"
-                                        required
-                                        error={errors.email}
-                                    />
-
-                                    <Input
-                                        type={showPassword ? 'text' : 'password'}
-                                        name="password"
-                                        label="Password"
-                                        icon="lock"
-                                        value={data.password}
-                                        onChange={(e) => setData('password', e.target.value)}
-                                        placeholder="••••••••"
-                                        required
-                                        error={errors.password}
-                                        labelRight={
-                                            <Link href="/forgot-password" className="font-medium text-primary hover:underline transition-colors">
-                                                Forgot password?
-                                            </Link>
-                                        }
-                                        rightElement={
-                                            <button 
-                                                type="button" 
-                                                className="text-slate-400 hover:text-primary transition-colors focus:outline-none"
-                                                onClick={() => setShowPassword(!showPassword)}
-                                            >
-                                                <span className="material-symbols-outlined text-xl">
-                                                    {showPassword ? 'visibility_off' : 'visibility'}
-                                                </span>
-                                            </button>
-                                        }
-                                    />
-
-                                    <div className="flex items-center pt-1">
+                            <div className="flex items-center pt-2">
+                                <label htmlFor="remember" className="flex items-center gap-3 cursor-pointer group">
+                                    <div className="relative flex items-center justify-center">
                                         <input 
                                             id="remember" 
                                             name="remember" 
                                             type="checkbox"
                                             checked={data.remember}
                                             onChange={(e) => setData('remember', e.target.checked)}
-                                            className="h-4 w-4 text-primary focus:ring-primary border-slate-300 dark:border-slate-700 rounded transition-colors" 
+                                            className="peer h-5 w-5 cursor-pointer appearance-none rounded-lg border-2 border-input bg-background checked:border-primary checked:bg-primary transition-all duration-200" 
                                         />
-                                        <label htmlFor="remember" className="ml-2 block text-sm font-medium text-slate-600 dark:text-slate-400">
-                                            Keep me signed in for 30 days
-                                        </label>
+                                        <span className="material-symbols-outlined absolute text-primary-foreground opacity-0 peer-checked:opacity-100 pointer-events-none text-sm font-bold transition-opacity duration-200" style={{ fontVariationSettings: "'FILL' 1" }}>
+                                            check
+                                        </span>
                                     </div>
+                                    <span className="text-sm font-semibold text-muted-foreground group-hover:text-foreground transition-colors">
+                                        Keep me signed in
+                                    </span>
+                                </label>
+                            </div>
 
-                                    <div className="pt-2">
-                                        <Button 
-                                            type="submit" 
-                                            variant="primary"
-                                            loading={processing}
-                                            className="w-full"
-                                        >
-                                            {processing ? 'Signing In...' : 'Sign In'}
-                                        </Button>
-                                    </div>
-                                </form>
+                            <Button 
+                                type="submit" 
+                                variant="primary"
+                                loading={processing}
+                                className="w-full py-4 text-base font-bold rounded-xl shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 active:scale-[0.98]"
+                            >
+                                {processing ? 'Signing In...' : 'Sign In'}
+                            </Button>
+                        </form>
 
-                                <div className="mt-8 pt-6 border-t border-border text-center">
-                                    <p className="text-muted-foreground text-sm font-medium">
-                                        Don't have an account yet?
-                                        <Link href="/register" className="ml-1 text-primary font-bold hover:underline transition-colors">
-                                            Create Account
-                                        </Link>
-                                    </p>
-                                </div>
+                        <div className="relative py-4">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t border-border/60"></span>
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-background px-4 text-muted-foreground font-bold tracking-wider">New Vendor?</span>
                             </div>
                         </div>
-                    </main>
 
-                    {/* Footer */}
-                    <footer className="py-6 px-10 text-center text-muted-foreground text-xs font-medium">
-                        <p>© {new Date().getFullYear()} Mall Management Digital Approval System. All rights reserved.</p>
-                        <div className="mt-3 flex justify-center gap-6">
-                            <a className="hover:text-primary transition-colors" href="#">Privacy Policy</a>
-                            <a className="hover:text-primary transition-colors" href="#">Terms of Service</a>
-                            <a className="hover:text-primary transition-colors" href="#">Support</a>
+                        <div className="text-center">
+                            <Link href="/register" className="inline-flex w-full items-center justify-center px-6 py-4 border-2 border-border text-foreground font-bold rounded-xl hover:border-primary hover:bg-primary/5 transition-all duration-300">
+                                Create Vendor Account
+                            </Link>
                         </div>
-                    </footer>
+                    </div>
+                    
+                    {/* Footer */}
+                    <div className="absolute bottom-6 text-center w-full">
+                        <p className="text-xs font-semibold text-muted-foreground/60">
+                            © {new Date().getFullYear()} Icon Mall Bali Digital Approval System.
+                        </p>
+                    </div>
                 </div>
             </div>
         </>
@@ -181,3 +192,4 @@ function Login({ errors, status }) {
 }
 
 export default Login;
+
