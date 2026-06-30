@@ -122,6 +122,13 @@ class ApprovalController extends Controller
                 $formImageUrl = $this->storageService->getFileUrl($request->original_form_image);
             }
 
+            // Generate presigned URL untuk preview evidence (foto security)
+            $request->evidences->each(function ($evidence) {
+                $evidence->photo_url = $evidence->image_url
+                    ? $this->storageService->getFileUrl($evidence->image_url)
+                    : null;
+            });
+
             return Inertia::render('Approver/Requests/Detail', [
                 'request' => $request,
                 'roleLabel' => $roleLabel,

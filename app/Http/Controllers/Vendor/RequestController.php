@@ -590,6 +590,13 @@ class RequestController extends Controller
                 $qrCodeUrl = $this->qrCodeService->getQrCodeUrl($id);
             }
 
+            // Generate presigned URL untuk preview evidence (foto security)
+            $request->evidences->each(function ($evidence) {
+                $evidence->photo_url = $evidence->image_url
+                    ? $this->storageService->getFileUrl($evidence->image_url)
+                    : null;
+            });
+
             return Inertia::render('Vendor/Requests/Detail', [
                 'request' => $request,
                 'vendor' => $vendor,

@@ -185,13 +185,13 @@ class SecurityController extends Controller
             // Validate request
             $validated = $request->validate([
                 'photos' => 'required|array|max:5',
-                'photos.*' => 'required|image|mimes:jpeg,jpg,png|max:5120', // 5MB
+                'photos.*' => 'required|image|mimes:jpeg,jpg,png|max:20480', // 20MB
             ], [
                 'photos.required' => 'Minimal 1 foto evidence harus diupload.',
                 'photos.max' => 'Maksimal 5 foto evidence per request.',
                 'photos.*.image' => 'File harus berupa gambar.',
                 'photos.*.mimes' => 'Format gambar harus JPEG, JPG, atau PNG.',
-                'photos.*.max' => 'Ukuran gambar maksimal 5MB.',
+                'photos.*.max' => 'Ukuran gambar maksimal 20MB.',
             ]);
 
             // Upload evidence

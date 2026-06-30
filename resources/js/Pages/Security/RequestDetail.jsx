@@ -166,9 +166,9 @@ export default function RequestDetail({ auth, request, qrCodeUrl, formImageUrl, 
                                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                             <span className="material-symbols-outlined text-3xl text-slate-400 mb-2">add_a_photo</span>
                                             <p className="text-sm font-medium text-slate-600">Ambil/Pilih Foto</p>
-                                            <p className="text-xs text-slate-400 mt-1">Max 5 foto (5MB/foto)</p>
+                                            <p className="text-xs text-slate-400 mt-1">Max 5 foto (20MB/foto)</p>
                                         </div>
-                                        <input type="file" className="hidden" accept="image/*" multiple onChange={handleFileChange} disabled={processing} capture="environment" />
+                                        <input type="file" className="hidden" accept="image/*" multiple onChange={handleFileChange} disabled={processing} />
                                     </label>
                                 </div>
 

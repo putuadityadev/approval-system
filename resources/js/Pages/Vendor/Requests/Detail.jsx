@@ -373,6 +373,42 @@ export default function Detail({ request, vendor, qrCodeUrl, formImageUrl }) {
                                     </div>
                                 </div>
                             )}
+
+                            {/* Preview Evidence Security */}
+                            {request.evidences && request.evidences.length > 0 && (
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                                    <div className="p-5 border-b border-slate-100">
+                                        <h3 className="text-[16px] font-bold text-slate-900 flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-slate-400">verified_user</span>
+                                            Bukti Pengecekan Security
+                                        </h3>
+                                    </div>
+                                    <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {request.evidences.map((evidence, idx) => (
+                                            <div key={idx} className="border border-slate-200 rounded-lg overflow-hidden flex flex-col">
+                                                <div className="bg-slate-50 p-3 text-xs font-bold text-slate-600 border-b border-slate-200 flex justify-between items-center">
+                                                    <span>Oleh: {evidence.uploader?.email || 'Security'}</span>
+                                                    <span className="text-[10px] text-slate-400 bg-white px-2 py-1 rounded shadow-sm border border-slate-200">
+                                                        {evidence.evidence_type}
+                                                    </span>
+                                                </div>
+                                                <div className="p-2 flex-grow flex items-center justify-center bg-slate-100 min-h-[200px]">
+                                                    {evidence.photo_url ? (
+                                                        <DocumentViewer url={evidence.photo_url} title={`Evidence ${idx + 1}`} className="w-full h-full" />
+                                                    ) : (
+                                                        <p className="text-sm text-slate-500">Image URL missing</p>
+                                                    )}
+                                                </div>
+                                                {evidence.notes && (
+                                                    <div className="bg-slate-50 p-3 text-xs text-slate-600 italic border-t border-slate-200">
+                                                        <span className="font-semibold text-slate-700 not-italic">Catatan:</span> {evidence.notes}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Right Column (1/3) */}
