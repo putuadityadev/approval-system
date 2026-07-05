@@ -1,8 +1,23 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import DocumentViewer from '@/Components/shared/DocumentViewer';
+import SuratPreview from '@/Components/shared/SuratPreview';
 
 export default function Detail({ request, vendor, qrCodeUrl, formImageUrl }) {
+    // DEBUG: Console log untuk cek props yang masuk
+    console.log('=== Vendor Detail Page DEBUG ===');
+    console.log('request:', request);
+    console.log('request.request_type:', request?.request_type); // CRITICAL: Check type
+    console.log('vendor:', vendor);
+    console.log('qrCodeUrl:', qrCodeUrl);
+    console.log('formImageUrl:', formImageUrl);
+    console.log('request.sikmb_detail:', request?.sikmb_detail);
+    console.log('request.sikmDetail:', request?.sikmDetail);
+    console.log('request.sik_detail:', request?.sik_detail);
+    console.log('request.sikDetail:', request?.sikDetail);
+    console.log('All request keys:', Object.keys(request || {}));
+    console.log('=== END DEBUG ===');
+    
     const [showCancelModal, setShowCancelModal] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm({
         reason: '',
@@ -238,126 +253,22 @@ export default function Detail({ request, vendor, qrCodeUrl, formImageUrl }) {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                         {/* Left Column (2/3) */}
                         <div className="lg:col-span-2 space-y-6">
-                            {/* Document Details Section */}
-                            <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
-                                <h3 className="text-[18px] font-bold text-slate-900 mb-6 flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-slate-400">info</span>
-                                    Detail Informasi
-                                </h3>
-                                
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="space-y-4">
-                                        <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Tipe Surat</p>
-                                            <p className="text-[14px] font-medium text-slate-900">{getTypeLabel(request.request_type)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Tanggal Dibuat</p>
-                                            <p className="text-[14px] font-medium text-slate-900">{formatDate(request.created_at)}</p>
-                                        </div>
-                                        {request.sop_form_code && (
-                                            <div>
-                                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Kode SOP</p>
-                                                <p className="text-[14px] font-medium text-slate-900">{request.sop_form_code}</p>
-                                            </div>
-                                        )}
-                                        <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Nama PIC</p>
-                                            <p className="text-[14px] font-medium text-slate-900">{request.vendor?.pic_name || '-'}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Email Pengaju</p>
-                                            <p className="text-[14px] font-medium text-slate-900">{request.vendor?.user?.email || '-'}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">No. Handphone PIC</p>
-                                            <p className="text-[14px] font-medium text-slate-900">{request.vendor?.pic_phone || '-'}</p>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Perusahaan</p>
-                                            <p className="text-[14px] font-medium text-slate-900">{request.vendor?.company_name}</p>
-                                        </div>
-                                        {request.sikmb_detail && (
-                                            <>
-                                                <div>
-                                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Periode</p>
-                                                    <p className="text-[14px] font-medium text-slate-900">{request.sikmb_detail.start_date} - {request.sikmb_detail.end_date}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Tujuan</p>
-                                                    <p className="text-[14px] font-medium text-slate-900">{request.sikmb_detail.dest_address}</p>
-                                                </div>
-                                            </>
-                                        )}
-                                        {request.sik_detail && (
-                                            <>
-                                                <div>
-                                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Periode</p>
-                                                    <p className="text-[14px] font-medium text-slate-900">{request.sik_detail.start_date} - {request.sik_detail.end_date}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Lokasi</p>
-                                                    <p className="text-[14px] font-medium text-slate-900">{request.sik_detail.location}</p>
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
+                            {/* Tombol Print */}
+                            <div className="print:hidden">
+                                <button
+                                    onClick={() => window.print()}
+                                    className="w-full sm:w-auto px-6 py-3 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors font-bold text-sm shadow-sm flex items-center justify-center gap-2"
+                                >
+                                    <span className="material-symbols-outlined text-[20px]">print</span>
+                                    Print Surat
+                                </button>
                             </div>
 
-                            {/* Items / Workers Section */}
-                            {(request.sikmb_detail?.items?.length > 0 || request.sik_detail) && (
-                                <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                                    <div className="p-6 border-b border-slate-100">
-                                        <h3 className="text-[18px] font-bold text-slate-900 flex items-center gap-2">
-                                            <span className="material-symbols-outlined text-slate-400">
-                                                {request.sik_detail ? 'engineering' : 'inventory_2'}
-                                            </span>
-                                            {request.sik_detail ? 'Detail Pekerjaan' : 'Daftar Barang'}
-                                        </h3>
-                                    </div>
-                                    
-                                    {request.sikmb_detail && (
-                                        <table className="w-full text-left border-collapse">
-                                            <thead>
-                                                <tr className="bg-slate-50">
-                                                    <th className="py-3 px-6 text-[10px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">Nama Barang</th>
-                                                    <th className="py-3 px-6 text-[10px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 w-24">Qty</th>
-                                                    <th className="py-3 px-6 text-[10px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 w-32">Unit</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {request.sikmb_detail.items.map((item, i) => (
-                                                    <tr key={i} className="hover:bg-slate-50 transition-colors">
-                                                        <td className="py-4 px-6 text-[14px] font-medium text-slate-900">{item.item_name}</td>
-                                                        <td className="py-4 px-6 text-[14px] font-medium text-slate-600">{item.quantity}</td>
-                                                        <td className="py-4 px-6 text-[14px] font-medium text-slate-600">{item.unit}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    )}
-
-                                    {request.sik_detail && (
-                                        <div className="p-6 grid grid-cols-2 gap-6">
-                                            <div>
-                                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Jumlah Pekerja</p>
-                                                <p className="text-[14px] font-medium text-slate-900">{request.sik_detail.worker_count} Orang</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Jenis Pekerjaan</p>
-                                                <p className="text-[14px] font-medium text-slate-900">{request.sik_detail.job_type}</p>
-                                            </div>
-                                            <div className="col-span-2">
-                                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Deskripsi</p>
-                                                <p className="text-[14px] font-medium text-slate-900">{request.sik_detail.description || '-'}</p>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                            {/* Preview Surat - Component Baru */}
+                            <SuratPreview 
+                                request={request} 
+                                type={request.request_type === 'IJIN_KERJA' ? 'sik' : 'sikmb'}
+                            />
 
                             {/* Preview Bukti Upload */}
                             {formImageUrl && (

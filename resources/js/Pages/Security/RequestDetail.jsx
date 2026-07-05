@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useForm } from '@inertiajs/react';
 import SecurityMobileLayout from '@/Layouts/SecurityMobileLayout';
+import SuratPreview from '@/Components/shared/SuratPreview';
 
 /**
  * Security Request Detail
@@ -91,8 +92,25 @@ export default function RequestDetail({ auth, request, qrCodeUrl, formImageUrl, 
 
                 {/* Details Accordion / List */}
                 <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <details className="group">
+                        <summary className="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center cursor-pointer list-none">
+                            <h3 className="font-bold text-slate-900 text-sm">Detail Lengkap Surat</h3>
+                            <span className="material-symbols-outlined transition-transform group-open:rotate-180 text-slate-500">expand_more</span>
+                        </summary>
+                        <div className="p-4">
+                            {/* Preview Surat dalam format resmi */}
+                            <SuratPreview 
+                                request={request} 
+                                type={request.request_type === 'IJIN_KERJA' ? 'sik' : 'sikmb'}
+                            />
+                        </div>
+                    </details>
+                </div>
+
+                {/* Ringkasan Singkat untuk Mobile */}
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                     <div className="p-4 bg-slate-50 border-b border-slate-100">
-                        <h3 className="font-bold text-slate-900 text-sm">Informasi Detail</h3>
+                        <h3 className="font-bold text-slate-900 text-sm">Ringkasan Info</h3>
                     </div>
                     <div className="p-4 space-y-4">
                         {request.sikmb_detail && (

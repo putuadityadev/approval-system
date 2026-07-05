@@ -54,6 +54,12 @@ class Request extends Model
     ];
 
     /**
+     * REMOVED: Accessor yang conflict dengan relasi
+     * Laravel Inertia sudah auto-serialize relasi ke snake_case
+     * Tidak perlu accessor tambahan
+     */
+
+    /**
      * Relasi ke Vendor
      */
     public function vendor()

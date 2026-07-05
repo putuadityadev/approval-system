@@ -79,3 +79,47 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+
+/* Print Styles - Hide UI elements saat print, hanya tampilkan SuratPreview */
+@media print {
+  /* Hide semua element kecuali SuratPreview */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Show only the SuratPreview component and its children */
+  .print\:block,
+  .print\:block * {
+    visibility: visible;
+  }
+  
+  /* Hide elemen UI yang tidak perlu di print */
+  .print\:hidden,
+  nav,
+  aside,
+  header,
+  footer,
+  button,
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Reset margin untuk print */
+  @page {
+    margin: 1cm;
+  }
+  
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  
+  /* Pastikan SuratPreview terlihat dan positioned correctly */
+  .print\:block {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}

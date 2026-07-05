@@ -191,11 +191,26 @@ Route::middleware(['auth', 'active', 'role:vendor'])->prefix('vendor')->name('ve
     Route::post('/profile/password', [\App\Http\Controllers\Vendor\ProfileController::class, 'updatePassword'])
         ->name('profile.password.update');
     
-    // New Flow: Upload & OCR first, then create form
-    Route::post('/requests/upload-and-scan', [\App\Http\Controllers\Vendor\RequestController::class, 'uploadAndScan'])
-        ->name('requests.upload-scan');
+    // ═══════════════════════════════════════════════════════════════════════
+    // OCR ROUTES - DINONAKTIFKAN
+    // ═══════════════════════════════════════════════════════════════════════
+    // Routes ini TIDAK DIPAKAI lagi karena sistem OCR sudah dinonaktifkan.
+    // User sekarang langsung masuk ke form kosong untuk input manual.
+    // 
+    // Jika ingin mengaktifkan OCR lagi, uncomment routes ini beserta:
+    // - RequestController@uploadAndScan method
+    // - OcrController
+    // - OcrService & AiOcrService
+    // ═══════════════════════════════════════════════════════════════════════
     
-    // SIKMB Routes (with OCR data)
+    // Route::post('/requests/upload-and-scan', [\App\Http\Controllers\Vendor\RequestController::class, 'uploadAndScan'])
+    //     ->name('requests.upload-scan');
+    
+    // Route::post('/ocr/extract-sikmb', [\App\Http\Controllers\Vendor\OcrController::class, 'extractSikmData'])
+    //     ->name('ocr.extract.sikmb');
+    
+    // Route::post('/ocr/extract-sik', [\App\Http\Controllers\Vendor\OcrController::class, 'extractSikData'])
+    //     ->name('ocr.extract.sik');
     Route::get('/requests/create/sikmb', [\App\Http\Controllers\Vendor\RequestController::class, 'createSikmb'])
         ->name('requests.create.sikmb');
     Route::post('/requests/sikmb', [\App\Http\Controllers\Vendor\RequestController::class, 'storeSikmb'])
@@ -212,14 +227,8 @@ Route::middleware(['auth', 'active', 'role:vendor'])->prefix('vendor')->name('ve
         ->name('requests.show');
     Route::get('/requests/{id}/tracking', [\App\Http\Controllers\Vendor\RequestController::class, 'tracking'])
         ->name('requests.tracking');
-    Route::post('/requests/{id}/cancel', [\App\Http\Controllers\Vendor\RequestController::class, 'cancel'])
-        ->name('requests.cancel');
     
-    // OCR Routes (untuk ekstrak data dari gambar surat)
-    Route::post('/ocr/extract-sikmb', [\App\Http\Controllers\Vendor\OcrController::class, 'extractSikmData'])
-        ->name('ocr.extract.sikmb');
-    Route::post('/ocr/extract-sik', [\App\Http\Controllers\Vendor\OcrController::class, 'extractSikData'])
-        ->name('ocr.extract.sik');
+    // SIKMB Routes
 });
 
 /*

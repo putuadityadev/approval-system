@@ -1,31 +1,47 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
-import DocumentViewer from '@/Components/shared/DocumentViewer';
 
-export default function CreateSik({ vendor, ocrData = {}, uploadedFileName, previewUrl }) {
+/**
+ * CreateSik
+ *
+ * Form untuk membuat Surat Izin Kerja (SIK).
+ * 
+ * PERUBAHAN: OCR DINONAKTIFKAN
+ * - Form selalu dimulai dari KOSONG (tidak ada pre-fill OCR)
+ * - Tidak ada preview surat di samping
+ * - Upload foto surat OPSIONAL di dalam form (belum diimplementasikan)
+ * - User input manual semua data
+ * 
+ * Props:
+ * - vendor: object - Data vendor yang login
+ */
+export default function CreateSik({ vendor }) {
     const { flash } = usePage().props;
-    const formStorageKey = `sik_form_${uploadedFileName || 'draft'}`;
+    const formStorageKey = `sik_form_draft`;
 
     const getInitialData = () => {
-        // Abaikan cache localStorage jika baru saja berhasil scan (ada flash message)
-        if (!flash?.success) {
-            const savedData = localStorage.getItem(formStorageKey);
-            if (savedData) {
-                try { return JSON.parse(savedData); } catch (e) {}
+        // Load dari localStorage jika ada (auto-save saat user ketik)
+        const savedData = localStorage.getItem(formStorageKey);
+        if (savedData && !flash?.success) {
+            try { 
+                return JSON.parse(savedData); 
+            } catch (e) {
+                console.error('Failed to parse saved form data:', e);
             }
         }
 
+        // Default: form kosong
         return {
-            sop_form_code: ocrData.sop_form_code || '',
-            document_serial_no: ocrData.document_serial_no || '',
-            worker_count: ocrData.worker_count || 1,
-            start_date: ocrData.start_date || '',
-            end_date: ocrData.end_date || '',
-            start_time: ocrData.start_time || '',
-            end_time: ocrData.end_time || '',
-            location: ocrData.location || '',
-            job_type: ocrData.job_type || '',
-            description: ocrData.description || '',
+            sop_form_code: '',
+            document_serial_no: '',
+            worker_count: 1,
+            start_date: '',
+            end_date: '',
+            start_time: '',
+            end_time: '',
+            location: '',
+            job_type: '',
+            description: '',
         };
     };
 
@@ -63,22 +79,15 @@ export default function CreateSik({ vendor, ocrData = {}, uploadedFileName, prev
                                 <span className="material-symbols-outlined text-primary text-[32px]">engineering</span>
                                 Surat Izin Kerja (SIK)
                             </h1>
-                            {uploadedFileName ? (
-                                <p className="mt-2 text-sm font-medium text-slate-500 flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-[16px]">description</span>
-                                    File: {uploadedFileName}
-                                </p>
-                            ) : (
-                                <p className="mt-2 text-sm font-medium text-slate-500">
-                                    Ajukan izin kerja untuk pekerjaan di area mall
-                                </p>
-                            )}
+                            <p className="mt-2 text-sm font-medium text-slate-500">
+                                Ajukan izin kerja untuk pekerjaan di area mall - Isi semua data secara manual
+                            </p>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                        {/* LEFT: Form */}
-                        <div className="lg:col-span-7 space-y-6">
+                    <div className="grid grid-cols-1 gap-6 items-start">
+                        {/* Form - Full Width (tidak ada preview lagi) */}
+                        <div className="space-y-6">
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 {/* Document Info */}
                                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
@@ -114,6 +123,23 @@ export default function CreateSik({ vendor, ocrData = {}, uploadedFileName, prev
                                                 required
                                             />
                                             {errors.document_serial_no && <p className="mt-1 text-xs font-medium text-red-600">{errors.document_serial_no}</p>}
+                                        </div>
+                                        
+                                        {/* Upload Foto Surat (OPSIONAL) - Full width */}
+                                        <div className="md:col-span-2">
+                                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                                                Upload Foto Surat (Opsional)
+                                            </label>
+                                            <input
+                                                type="file"
+                                                accept="image/jpeg,image/jpg,image/png"
+                                                onChange={(e) => setData('original_form_image', e.target.files[0])}
+                                                className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:ring-primary focus:border-primary text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                                            />
+                                            <p className="mt-1 text-xs text-slate-500">
+                                                Format: JPG atau PNG. Maksimal 5MB. Upload foto surat fisik untuk dokumentasi (opsional).
+                                            </p>
+                                            {errors.original_form_image && <p className="mt-1 text-xs font-medium text-red-600">{errors.original_form_image}</p>}
                                         </div>
                                     </div>
                                 </div>
@@ -270,28 +296,6 @@ export default function CreateSik({ vendor, ocrData = {}, uploadedFileName, prev
                                     </button>
                                 </div>
                             </form>
-                        </div>
-
-                        {/* RIGHT: Preview */}
-                        <div className="lg:col-span-5">
-                            <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 sticky top-8">
-                                <h3 className="text-[16px] font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-slate-400">preview</span>
-                                    Preview Surat Fisik
-                                </h3>
-
-                                <DocumentViewer url={previewUrl} title="Surat Asli" />
-
-                                {previewUrl && (
-                                    <div className="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-lg flex gap-3">
-                                        <span className="material-symbols-outlined text-primary mt-0.5">lightbulb</span>
-                                        <div>
-                                            <p className="text-sm font-bold text-primary mb-1">Tips Crosscheck</p>
-                                            <p className="text-xs text-slate-600">Cocokkan data pada form di sebelah kiri dengan isi surat asli. Pastikan No. Seri dan jadwal sudah sesuai sebelum menekan Submit.</p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
                         </div>
                     </div>
                 </div>
