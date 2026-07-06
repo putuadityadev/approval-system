@@ -14,6 +14,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Button from '@/Components/ui/Button';
 import ValidationErrors from '@/Components/shared/ValidationErrors';
 import SuratPreview from '@/Components/shared/SuratPreview';
+import DocumentViewer from '@/Components/shared/DocumentViewer';
 
 export default function ApproverRequestDetail({ auth, request, roleLabel, canApprove, formImageUrl }) {
     const [showApproveModal, setShowApproveModal] = useState(false);
