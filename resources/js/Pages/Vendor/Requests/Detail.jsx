@@ -4,20 +4,6 @@ import DocumentViewer from '@/Components/shared/DocumentViewer';
 import SuratPreview from '@/Components/shared/SuratPreview';
 
 export default function Detail({ request, vendor, qrCodeUrl, formImageUrl }) {
-    // DEBUG: Console log untuk cek props yang masuk
-    console.log('=== Vendor Detail Page DEBUG ===');
-    console.log('request:', request);
-    console.log('request.request_type:', request?.request_type); // CRITICAL: Check type
-    console.log('vendor:', vendor);
-    console.log('qrCodeUrl:', qrCodeUrl);
-    console.log('formImageUrl:', formImageUrl);
-    console.log('request.sikmb_detail:', request?.sikmb_detail);
-    console.log('request.sikmDetail:', request?.sikmDetail);
-    console.log('request.sik_detail:', request?.sik_detail);
-    console.log('request.sikDetail:', request?.sikDetail);
-    console.log('All request keys:', Object.keys(request || {}));
-    console.log('=== END DEBUG ===');
-    
     const [showCancelModal, setShowCancelModal] = useState(false);
     const { data, setData, post, processing, errors, reset } = useForm({
         reason: '',

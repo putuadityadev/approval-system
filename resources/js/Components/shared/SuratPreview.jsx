@@ -12,25 +12,11 @@
 export default function SuratPreview({ request, type }) {
     const isSIKMB = type === 'sikmb';
     
-    // DEBUG: Console log untuk cek data yang masuk
-    console.log('=== SuratPreview DEBUG ===');
-    console.log('type:', type);
-    console.log('isSIKMB:', isSIKMB);
-    console.log('request:', request);
-    console.log('request.sikm_detail:', request.sikm_detail); // ← Backend send this (typo)
-    console.log('request.sikmDetail:', request.sikmDetail);
-    console.log('request.sik_detail:', request.sik_detail);
-    console.log('request.sikDetail:', request.sikDetail);
-    console.log('All request keys:', Object.keys(request));
-    
     // CRITICAL FIX: Backend kirim 'sikm_detail' (typo missing 'b')
     // Laravel serialize sikmDetail() → sikm_detail (bukan sikmb_detail)
     const detail = isSIKMB 
-        ? (request.sikm_detail || request.sikmDetail || request.sikmb_detail)  // ← Try sikm_detail first!
+        ? (request.sikm_detail || request.sikmDetail || request.sikmb_detail)
         : (request.sik_detail || request.sikDetail);
-    
-    console.log('detail result:', detail);
-    console.log('=== END DEBUG ===');
 
     if (!detail) {
         return (
@@ -226,6 +212,52 @@ export default function SuratPreview({ request, type }) {
                                 </div>
                             </div>
                         )}
+
+                        {/* CATATAN untuk SIKMB */}
+                        <div className="mt-6 bg-yellow-50 border-2 border-yellow-300 rounded-lg p-5">
+                            <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-[18px] text-yellow-700">warning</span>
+                                CATATAN:
+                            </h3>
+                            <ol className="space-y-2 text-xs leading-relaxed text-slate-700">
+                                <li className="flex gap-2">
+                                    <span className="font-bold flex-shrink-0">1.</span>
+                                    <span>Keluar / masuk barang wajib menggunakan lift barang.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="font-bold flex-shrink-0">2.</span>
+                                    <span>Surat izin masuk barang berlaku <strong>7 (tujuh) hari</strong> dan surat izin keluar barang berlaku <strong>1 (satu) hari</strong>, untuk itu, meminta izin keluar / masuk barang dapat dilaksanakan <strong>H-2</strong> sebelum pelaksanaan keluar / masuk barang, <strong>Jam 10.00 - 15.00 WITA</strong>, hari <strong>Senin - Jumat</strong> di luar hari <strong>Sabtu, Minggu dan Hari Libur Nasional</strong>.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="font-bold flex-shrink-0">3.</span>
+                                    <span>Keluar / masuk barang-barang dilaksanakan dari pukul <strong>22.00 - 00.00 WITA</strong>.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="font-bold flex-shrink-0">4.</span>
+                                    <span>Petugas Security wajib dan berhak untuk memeriksa barang masuk / keluar.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="font-bold flex-shrink-0">5.</span>
+                                    <span>Petugas Security wajib dan berhak menolak izin keluar / masuk barang apabila barang tidak sesuai dengan item barang di dalam form dan Petugas wajib menolak apabila tidak sesuai dengan jadwal keluar / masuk barang yang telah ditetapkan.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="font-bold flex-shrink-0">6.</span>
+                                    <span>Pekerja keluar / masuk barang wajib dilengkapi dengan kartu identitas.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="font-bold flex-shrink-0">7.</span>
+                                    <span>Pembawa barang diwajibkan untuk mengucapkan <strong>KTP / SIM</strong> (kepada pihak security).</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="font-bold flex-shrink-0">8.</span>
+                                    <span>Untuk pengangkutan barang-barang proyek diwajibkan memberikan pengamanan / proteksi untuk interior lift dan keindahannya yang dilewati.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="font-bold flex-shrink-0">9.</span>
+                                    <span>Seluruh kerusakan interior lift dan area landlord (area yang dilewati) akibat kecerobohan pembawa barang akan dikenakan denda sebesar biaya perbaikan yang dilakukan vendor yang ditunjuk oleh Management Icon Bali.</span>
+                                </li>
+                            </ol>
+                        </div>
                     </>
                 ) : (
                     <>
@@ -282,6 +314,71 @@ export default function SuratPreview({ request, type }) {
                                     </div>
                                 </div>
                             )}
+                        </div>
+
+                        {/* KETENTUAN KERJA untuk SIK */}
+                        <div className="mt-6 bg-blue-50 border-2 border-blue-300 rounded-lg p-5">
+                            <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-[18px] text-blue-700">gavel</span>
+                                KETENTUAN KERJA:
+                            </h3>
+                            <ol className="space-y-2 text-xs leading-relaxed text-slate-700">
+                                <li className="flex gap-2">
+                                    <span className="font-bold flex-shrink-0">1.</span>
+                                    <span>Setiap akan memulai & mengakhiri pekerjaan Kontraktor/Tenant wajib menghubungi PIC di lokasi / gedung tsb. Surat Izin Kerja harus diperbaharui setiap <strong>7 hari</strong>.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="font-bold flex-shrink-0">2.</span>
+                                    <span>Kontraktor wajib menyerahkan diagram pekerjaan atau rencana kerja yang telah disetujui oleh <strong>Perusahaan</strong>, terutama yang berhubungan dengan pekerjaan relayout, perubahan system existing, baik Sipil maupun ME.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="font-bold flex-shrink-0">3.</span>
+                                    <span>Setiap pekerja diberi tanda pengenal yang selalu dikenakan.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="font-bold flex-shrink-0">4.</span>
+                                    <span>Pekerjaan harus memenuhi standar <strong>Health Safety Environment</strong>.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="font-bold flex-shrink-0">5.</span>
+                                    <span>Setiap pekerja diberi alat pelindung kerja, sesuai jenis pekerjaan.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="font-bold flex-shrink-0">6.</span>
+                                    <span>Tidak diperkenankan merokok di dalam gedung.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="font-bold flex-shrink-0">7.</span>
+                                    <div className="flex-1">
+                                        <span>Khusus untuk pekerjaan yang berhubungan dengan <strong>Sistem Permit</strong> akan diberlakukan izin khusus, antara lain:</span>
+                                        <ul className="mt-1 ml-4 space-y-1">
+                                            <li className="flex gap-2">
+                                                <span className="flex-shrink-0">a.</span>
+                                                <span><strong>Hot Work Permit</strong> (Pengelasan)</span>
+                                            </li>
+                                            <li className="flex gap-2">
+                                                <span className="flex-shrink-0">b.</span>
+                                                <span><strong>Confined Space Permit</strong> (Tempat Kerja yang Sempit)</span>
+                                            </li>
+                                            <li className="flex gap-2">
+                                                <span className="flex-shrink-0">c.</span>
+                                                <div className="flex-1">
+                                                    <span><strong>Safe Work Permit</strong> (Pekerjaan berisiko) yang mencakup:</span>
+                                                    <span className="block ml-4 mt-0.5">Penggalian, pengeboran, pekerjaan di Tempat Tinggi, Pekerjaan pada Tegangan Tinggi</span>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="font-bold flex-shrink-0">8.</span>
+                                    <span>Kontraktor bersedia memperbaiki segala kerusakan & kesalahan yang timbul akibat pekerjaan yang dilakukan.</span>
+                                </li>
+                                <li className="flex gap-2">
+                                    <span className="font-bold flex-shrink-0">9.</span>
+                                    <span>Tidak diperkenankan menginap di dalam area Perusahaan / Gedung.</span>
+                                </li>
+                            </ol>
                         </div>
                     </>
                 )}
