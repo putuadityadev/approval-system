@@ -42,6 +42,7 @@ class Request extends Model
         'status',
         'sop_form_code',
         'document_serial_no',
+        'document_counter',
         'original_form_image',
         'qr_code',
         'cancelled_reason',

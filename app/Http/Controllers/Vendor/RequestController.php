@@ -8,6 +8,7 @@ use App\Http\Requests\Vendor\SubmitSikRequest;
 use App\Services\RequestService;
 use App\Services\QrCodeService;
 use App\Services\StorageService;
+use App\Services\DocumentSerialService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -47,12 +48,18 @@ class RequestController extends Controller
     protected $requestService;
     protected $qrCodeService;
     protected $storageService;
+    protected $documentSerialService;
 
-    public function __construct(RequestService $requestService, QrCodeService $qrCodeService, StorageService $storageService)
-    {
+    public function __construct(
+        RequestService $requestService, 
+        QrCodeService $qrCodeService, 
+        StorageService $storageService,
+        DocumentSerialService $documentSerialService
+    ) {
         $this->requestService = $requestService;
         $this->qrCodeService = $qrCodeService;
         $this->storageService = $storageService;
+        $this->documentSerialService = $documentSerialService;
     }
 
     /**

@@ -36,13 +36,16 @@ class RequestService
 {
     protected $auditLogService;
     protected $storageService;
+    protected $documentSerialService;
 
     public function __construct(
         AuditLogService $auditLogService,
-        StorageService $storageService
+        StorageService $storageService,
+        DocumentSerialService $documentSerialService
     ) {
         $this->auditLogService = $auditLogService;
         $this->storageService = $storageService;
+        $this->documentSerialService = $documentSerialService;
     }
 
     /**
@@ -76,6 +79,14 @@ class RequestService
         DB::beginTransaction();
 
         try {
+            // AUTO-GENERATE document serial number
+            $serialData = $this->documentSerialService->generateSerialNumber($data['request_type']);
+            
+            Log::info('REQUEST_SUBMIT_SIKMB_SERIAL_GENERATED', [
+                'serial_no' => $serialData['serial_no'],
+                'counter' => $serialData['counter'],
+            ]);
+
             // Upload form image jika ada
             $formImagePath = null;
             if (isset($data['original_form_image'])) {
@@ -85,13 +96,14 @@ class RequestService
                 );
             }
 
-            // Create request
+            // Create request dengan auto-generated serial number
             $request = Request::create([
                 'vendor_id' => $data['vendor_id'],
                 'request_type' => $data['request_type'],
                 'status' => 'SUBMITTED',
                 'sop_form_code' => $data['sop_form_code'] ?? null,
-                'document_serial_no' => $data['document_serial_no'],
+                'document_serial_no' => $serialData['serial_no'], // ← AUTO-GENERATED
+                'document_counter' => $serialData['counter'], // ← Save counter
                 'original_form_image' => $formImagePath,
             ]);
 
@@ -214,6 +226,14 @@ class RequestService
         DB::beginTransaction();
 
         try {
+            // AUTO-GENERATE document serial number
+            $serialData = $this->documentSerialService->generateSerialNumber('IJIN_KERJA');
+            
+            Log::info('REQUEST_SUBMIT_SIK_SERIAL_GENERATED', [
+                'serial_no' => $serialData['serial_no'],
+                'counter' => $serialData['counter'],
+            ]);
+
             // Upload form image jika ada
             $formImagePath = null;
             if (isset($data['original_form_image'])) {
@@ -223,13 +243,14 @@ class RequestService
                 );
             }
 
-            // Create request
+            // Create request dengan auto-generated serial number
             $request = Request::create([
                 'vendor_id' => $data['vendor_id'],
                 'request_type' => 'IJIN_KERJA',
                 'status' => 'SUBMITTED',
                 'sop_form_code' => $data['sop_form_code'] ?? null,
-                'document_serial_no' => $data['document_serial_no'],
+                'document_serial_no' => $serialData['serial_no'], // ← AUTO-GENERATED
+                'document_counter' => $serialData['counter'], // ← Save counter
                 'original_form_image' => $formImagePath,
             ]);
 

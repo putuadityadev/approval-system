@@ -39,7 +39,7 @@ class SubmitSikRequest extends FormRequest
     {
         return [
             'sop_form_code' => ['nullable', 'string', 'max:50'],
-            'document_serial_no' => ['required', 'string', 'max:50', 'unique:requests,document_serial_no'],
+            // document_serial_no REMOVED - auto-generated di backend
             'original_form_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:5120'], // 5MB
 
             // SIK Details
@@ -62,8 +62,7 @@ class SubmitSikRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'document_serial_no.required' => 'Nomor seri dokumen wajib diisi.',
-            'document_serial_no.unique' => 'Nomor seri dokumen sudah digunakan.',
+            // document_serial_no messages removed - auto-generated
             'original_form_image.image' => 'File harus berupa gambar.',
             'original_form_image.mimes' => 'Format gambar harus JPG atau PNG.',
             'original_form_image.max' => 'Ukuran gambar maksimal 5MB.',

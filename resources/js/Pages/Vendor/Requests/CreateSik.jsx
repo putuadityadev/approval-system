@@ -33,7 +33,7 @@ export default function CreateSik({ vendor }) {
         // Default: form kosong
         return {
             sop_form_code: '',
-            document_serial_no: '',
+            // document_serial_no REMOVED - auto-generated di backend
             worker_count: 1,
             start_date: '',
             end_date: '',
@@ -109,24 +109,9 @@ export default function CreateSik({ vendor }) {
                                             />
                                             {errors.sop_form_code && <p className="mt-1 text-xs font-medium text-red-600">{errors.sop_form_code}</p>}
                                         </div>
-
-                                        <div>
-                                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                                                No. Seri Dokumen <span className="text-red-500">*</span>
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={data.document_serial_no}
-                                                onChange={(e) => setData('document_serial_no', e.target.value)}
-                                                className={`w-full px-3 py-2 bg-slate-50 border rounded-lg focus:bg-white focus:ring-primary focus:border-primary text-sm placeholder:text-slate-400 ${errors.document_serial_no ? 'border-red-500' : 'border-slate-200'}`}
-                                                placeholder="Contoh: 001518"
-                                                required
-                                            />
-                                            {errors.document_serial_no && <p className="mt-1 text-xs font-medium text-red-600">{errors.document_serial_no}</p>}
-                                        </div>
                                         
                                         {/* Upload Foto Surat (OPSIONAL) - Full width */}
-                                        <div className="md:col-span-2">
+                                        {/* <div className="md:col-span-2">
                                             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
                                                 Upload Foto Surat (Opsional)
                                             </label>
@@ -140,7 +125,7 @@ export default function CreateSik({ vendor }) {
                                                 Format: JPG atau PNG. Maksimal 5MB. Upload foto surat fisik untuk dokumentasi (opsional).
                                             </p>
                                             {errors.original_form_image && <p className="mt-1 text-xs font-medium text-red-600">{errors.original_form_image}</p>}
-                                        </div>
+                                        </div> */}
                                     </div>
                                 </div>
 

@@ -44,7 +44,7 @@ class SubmitSikmRequest extends FormRequest
             // vendor_id akan di-set di controller, tidak perlu validasi dari request
             'request_type' => ['required', 'in:LOADING_IN,LOADING_OUT'],
             'sop_form_code' => ['nullable', 'string', 'max:50'],
-            'document_serial_no' => ['required', 'string', 'max:50', 'unique:requests,document_serial_no'],
+            // document_serial_no REMOVED - auto-generated di backend
             'original_form_image' => ['nullable', 'image', 'mimes:jpeg,jpg,png', 'max:5120'], // 5MB
             
             // SIKMB Details
@@ -96,8 +96,7 @@ class SubmitSikmRequest extends FormRequest
         return [
             'request_type.required' => 'Tipe surat wajib dipilih.',
             'request_type.in' => 'Tipe surat harus LOADING_IN atau LOADING_OUT.',
-            'document_serial_no.required' => 'Nomor seri dokumen wajib diisi.',
-            'document_serial_no.unique' => 'Nomor seri dokumen sudah digunakan.',
+            // document_serial_no messages removed - auto-generated
             'original_form_image.image' => 'File harus berupa gambar.',
             'original_form_image.mimes' => 'Format gambar harus JPG atau PNG.',
             'original_form_image.max' => 'Ukuran gambar maksimal 5MB.',
